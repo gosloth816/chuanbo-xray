@@ -165,9 +165,14 @@ def extract_claim_sentences(text: str) -> list[str]:
     claims: list[str] = []
     seen: set[str] = set()
     for raw in _CLAIM_SPLIT.split(text.replace("\r\n", "\n")):
-        candidate = re.sub(r"^[#>*\-\s\d.、（）()]+", "", raw.strip())
+        stripped = raw.strip()
+        if not stripped or stripped.startswith(("#", ">")):
+            continue
+        candidate = re.sub(r"^[*\-\s\d.、（）()]+", "", stripped)
         candidate = candidate.strip()
         if not (6 <= len(candidate) <= 220):
+            continue
+        if candidate.startswith("本文件为") or "合成测试材料" in candidate:
             continue
         if not any(cue in candidate for cue in CLAIM_CUES):
             continue
@@ -229,12 +234,6 @@ def classify_claim_offline(claim_text: str, evidence: list[EvidenceItem], eviden
     claim_conditioned = _has_any(claim_text, CONDITION_CUES)
     positive_claim = _has_any(claim_text, ("安全", "无残留", "适用", "有效", "防效", "提升", "减少", "增产"))
 
-    if positive_claim and negative:
-        return (
-            "insufficient",
-            "检索到的资料明确显示相关项目未开展、未验证或不能据此判断，尚不足以支持该宣传表述。",
-            "删除超出资料范围的结论；如确有依据，请补充完整试验、检测或登记资料，并注明适用条件。",
-        )
 
     values_conflict = False
     if claim_numbers and evidence_numbers and shared_metrics:
@@ -258,6 +257,12 @@ def classify_claim_offline(claim_text: str, evidence: list[EvidenceItem], eviden
             "补充地区、作物品种、试验条件、处理剂量和结果来源；避免把特定试验结果扩展为普遍效果。",
         )
 
+    if positive_claim and negative:
+        return (
+            "insufficient",
+            "检索到的资料明确显示相关项目未开展、未验证或不能据此判断，尚不足以支持该宣传表述。",
+            "删除超出资料范围的结论；如确有依据，请补充完整试验、检测或登记资料，并注明适用条件。",
+        )
     if broad and evidence_conditioned:
         return (
             "conditionally_supported",
@@ -284,3 +289,6 @@ def classify_claim_offline(claim_text: str, evidence: list[EvidenceItem], eviden
         "资料中虽有部分词语相关，但没有形成足以支持该主张的直接证据。",
         "补充与该主张直接对应的原文、试验数据或登记信息；无法补充时建议删除或改写。",
     )
+
+
+
