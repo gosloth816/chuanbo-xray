@@ -1,0 +1,23 @@
+# Runtime and secrets
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.streamlit/secrets.toml
+data/runtime/
+*.db
+*.sqlite3
+*.log
+
+# Generated exports
+exports/
+*.zip
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
