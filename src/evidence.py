@@ -24,7 +24,7 @@ CLAIM_CUES = (
     "防效", "防治", "防控", "抑制", "增产", "产量", "减少", "减量", "提升", "提高",
     "降低", "有效", "显著", "达到", "可达", "适用", "安全", "无残留", "零风险",
     "所有", "全部", "任何", "彻底", "保证", "唯一", "第一", "领先", "改善", "增强",
-    "研发", "登记", "推荐", "可减少",
+    "研发", "登记", "推荐", "可减少", "替代",
 )
 
 BROAD_CUES = (
@@ -39,7 +39,7 @@ CONDITION_CUES = (
 
 NEGATIVE_EVIDENCE_CUES = (
     "未设置", "未开展", "未检测", "未验证", "不能据此", "尚不能", "不适用于",
-    "没有提供", "无相关数据", "仅完成", "未覆盖", "无法判断", "尚无",
+    "没有提供", "未提供", "无相关数据", "仅完成", "未覆盖", "无法判断", "尚无",
 )
 
 METRIC_GROUPS = {
@@ -102,6 +102,13 @@ class EvidenceIndex:
                     continue
                 denominator = term_frequency + k1 * (1 - b + b * length / max(self.avg_length, 1e-9))
                 score += self._idf(token) * (term_frequency * (k1 + 1) / denominator) * min(query_tf, 2)
+            numeric_context = bool(_metric_groups(query) & _metric_groups(chunk.text))
+            if query_counts and numeric_context and _QUANTITY.search(query) and _QUANTITY.search(chunk.text):
+                score += 2.0
+                query_numbers = set(_QUANTITY.findall(query.replace("％", "%")))
+                chunk_numbers = set(_QUANTITY.findall(chunk.text.replace("％", "%")))
+                if query_numbers & chunk_numbers:
+                    score += 8.0
             if score >= min_score:
                 scored.append(ScoredChunk(chunk=chunk, score=round(score, 4)))
         scored.sort(key=lambda item: item.score, reverse=True)
@@ -223,23 +230,34 @@ def classify_claim_offline(claim_text: str, evidence: list[EvidenceItem], eviden
     chunk_by_id = {chunk.chunk_id: chunk for chunk in evidence_chunks}
     evidence_text = " ".join(chunk_by_id[item.chunk_id].text for item in valid_evidence if item.chunk_id in chunk_by_id)
     claim_numbers = _extract_quantities(claim_text)
-    evidence_numbers = _extract_quantities(evidence_text)
     claim_metrics = _metric_groups(claim_text)
-    evidence_metrics = _metric_groups(evidence_text)
-    shared_metrics = claim_metrics & evidence_metrics
+    relevant_evidence_texts = [
+        chunk_by_id[item.chunk_id].text
+        for item in valid_evidence
+        if item.chunk_id in chunk_by_id and claim_metrics & _metric_groups(chunk_by_id[item.chunk_id].text)
+    ]
+    evidence_text = " ".join(relevant_evidence_texts) or " ".join(
+        chunk_by_id[item.chunk_id].text for item in valid_evidence if item.chunk_id in chunk_by_id
+    )
     overlap = _relevant_overlap(claim_text, evidence_text)
     broad = _has_any(claim_text, BROAD_CUES)
-    negative = _has_any(evidence_text, NEGATIVE_EVIDENCE_CUES)
+    primary_chunk = chunk_by_id.get(valid_evidence[0].chunk_id)
+    primary_text = primary_chunk.text if primary_chunk else ""
+    negative = _has_any(primary_text, NEGATIVE_EVIDENCE_CUES)
     evidence_conditioned = _has_any(evidence_text, CONDITION_CUES)
     claim_conditioned = _has_any(claim_text, CONDITION_CUES)
-    positive_claim = _has_any(claim_text, ("安全", "无残留", "适用", "有效", "防效", "提升", "减少", "增产"))
+    positive_claim = _has_any(claim_text, ("安全", "无残留", "适用", "有效", "防效", "提升", "减少", "增产", "替代"))
 
 
+    claim_values = {round(value, 2) for value, _ in claim_numbers}
+    evidence_numbers: list[tuple[float, str]] = []
     values_conflict = False
-    if claim_numbers and evidence_numbers and shared_metrics:
-        claim_values = {round(value, 2) for value, _ in claim_numbers}
-        evidence_values = {round(value, 2) for value, _ in evidence_numbers}
-        values_conflict = bool(claim_values and evidence_values and not (claim_values & evidence_values))
+    for evidence_text_item in relevant_evidence_texts:
+        chunk_numbers = _extract_quantities(evidence_text_item)
+        evidence_numbers.extend(chunk_numbers)
+        chunk_values = {round(value, 2) for value, _ in chunk_numbers}
+        if claim_values and chunk_values and not (claim_values & chunk_values):
+            values_conflict = True
     if values_conflict:
         return (
             "conflicting",
@@ -248,8 +266,8 @@ def classify_claim_offline(claim_text: str, evidence: list[EvidenceItem], eviden
         )
 
     common_number = False
-    if claim_numbers and evidence_numbers:
-        common_number = bool({round(value, 2) for value, _ in claim_numbers} & {round(value, 2) for value, _ in evidence_numbers})
+    if claim_values and evidence_numbers:
+        common_number = bool(claim_values & {round(value, 2) for value, _ in evidence_numbers})
     if common_number and evidence_conditioned and not claim_conditioned:
         return (
             "conditionally_supported",
@@ -289,6 +307,12 @@ def classify_claim_offline(claim_text: str, evidence: list[EvidenceItem], eviden
         "资料中虽有部分词语相关，但没有形成足以支持该主张的直接证据。",
         "补充与该主张直接对应的原文、试验数据或登记信息；无法补充时建议删除或改写。",
     )
+
+
+
+
+
+
 
 
 

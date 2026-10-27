@@ -6,7 +6,7 @@ from typing import Any
 
 import streamlit as st
 
-from .demo_data import load_case_meta, load_demo_documents
+from .demo_data import list_demo_cases, load_case_meta, load_demo_documents
 from .local_llm import LocalLLMError
 from .models import ParsedDocument, ReviewSession
 from .parsing import DocumentParseError, parse_document_bytes, parse_text_document
@@ -103,6 +103,12 @@ def render_new_review(store: ReviewStore, enable_llm: bool, llm_base: str, llm_m
     selected_mode = st.radio("分析方式", mode_options, horizontal=True)
     mode = "local_llm" if selected_mode.startswith("本地大模型") else "offline_rules"
 
+    demo_cases = list_demo_cases()
+    demo_names = [case["case_name"] for case in demo_cases]
+    selected_demo_name = st.selectbox("内置合成演示案例", demo_names, index=0)
+    selected_demo_id = demo_cases[demo_names.index(selected_demo_name)]["case_id"]
+    st.caption("演示案例均为明确标注的合成测试数据，不对应任何真实产品、企业、试验或论文。")
+
     action_col, demo_col = st.columns([2, 1])
     with action_col:
         analyze_clicked = st.button("开始诊断", type="primary", width="stretch")
@@ -111,11 +117,11 @@ def render_new_review(store: ReviewStore, enable_llm: bool, llm_base: str, llm_m
 
     if demo_clicked:
         try:
-            metadata = load_case_meta()
+            metadata = load_case_meta(selected_demo_id)
             with st.spinner("正在解析合成案例并检索证据..."):
                 review = analyze_documents(
                     title=metadata["case_name"],
-                    documents=load_demo_documents(),
+                    documents=load_demo_documents(selected_demo_id),
                     mode="offline_rules",
                 )
                 _save_new_session(review, store)
@@ -164,4 +170,5 @@ def render_new_review(store: ReviewStore, enable_llm: bool, llm_base: str, llm_m
             st.error(f"分析未完成：{exc}")
         except Exception as exc:
             st.error(f"分析未完成：{exc}")
+
 

@@ -1,0 +1,13 @@
+{
+  "case_id": "case_02",
+  "case_name": "鲁田保水剂合成演示案例",
+  "is_synthetic": true,
+  "description": "用于演示明确支持、条件范围内支持与超出试验范围表述的合成测试材料。",
+  "source_notice": "全部内容为比赛合成测试数据，不对应真实产品、企业、试验或论文。",
+  "expected_verdicts": {
+    "鲁田保水剂适用于山东露地番茄。": "supported",
+    "在推荐剂量下，土壤含水量较清水对照提高12.5%。": "supported",
+    "本产品可减少灌溉次数2次。": "insufficient",
+    "本产品适用于山东全省所有土壤类型。": "insufficient"
+  }
+}

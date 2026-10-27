@@ -1,0 +1,13 @@
+{
+  "case_id": "case_03",
+  "case_name": "金穗营养液合成演示案例",
+  "is_synthetic": true,
+  "description": "用于演示数值冲突、试验条件支持与超出适用范围表述的合成测试材料。",
+  "source_notice": "全部内容为比赛合成测试数据，不对应真实产品、企业、试验或论文。",
+  "expected_verdicts": {
+    "金穗营养液可使小麦增产15%。": "conflicting",
+    "在山东德州小麦试验中，金穗营养液使小麦增产9.2%。": "supported",
+    "产品可完全替代化肥。": "insufficient",
+    "本产品对小麦、玉米和水稻均适用。": "insufficient"
+  }
+}
