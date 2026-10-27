@@ -15,9 +15,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 def default_database_path() -> Path:
     configured = os.environ.get("XRAY_DATA_DIR", "").strip()
-    runtime_dir = Path(configured) if configured else PROJECT_ROOT / "data" / "runtime"
-    if not runtime_dir.is_absolute():
-        runtime_dir = PROJECT_ROOT / runtime_dir
+    if os.environ.get("SPACE_ID") or os.environ.get("XRAY_DEPLOYMENT_MODE", "").lower() == "public":
+        runtime_dir = Path("/tmp/chuanbo-xray")
+    else:
+        runtime_dir = Path(configured) if configured else PROJECT_ROOT / "data" / "runtime"
+        if not runtime_dir.is_absolute():
+            runtime_dir = PROJECT_ROOT / runtime_dir
     runtime_dir.mkdir(parents=True, exist_ok=True)
     return runtime_dir / "chuanbo_xray.sqlite3"
 

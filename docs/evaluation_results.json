@@ -1,5 +1,5 @@
 {
-  "ran_at": "2026-10-27T21:09:34+08:00",
+  "ran_at": "2026-10-27T22:09:10+08:00",
   "command": ".venv\\Scripts\\python.exe scripts\\run_evaluation.py",
   "mode": "offline_rules",
   "dataset": "三个明确标注的合成测试案例",
@@ -45,7 +45,7 @@
       "all_claims_correct": true,
       "quotes_checked": 22,
       "quotes_valid": 22,
-      "elapsed_seconds": 0.005
+      "elapsed_seconds": 0.0046
     },
     {
       "case_id": "case_02",
@@ -56,7 +56,7 @@
       "all_claims_correct": true,
       "quotes_checked": 14,
       "quotes_valid": 14,
-      "elapsed_seconds": 0.0024
+      "elapsed_seconds": 0.0022
     },
     {
       "case_id": "case_03",
@@ -67,7 +67,7 @@
       "all_claims_correct": true,
       "quotes_checked": 14,
       "quotes_valid": 14,
-      "elapsed_seconds": 0.0022
+      "elapsed_seconds": 0.0021
     }
   ],
   "claims": [
@@ -226,5 +226,5 @@
       "all_quotes_valid": true
     }
   ],
-  "elapsed_seconds": 0.0416
+  "elapsed_seconds": 0.037
 }

@@ -33,3 +33,10 @@ def test_demo_case_runs_and_human_review_is_saved(tmp_path, monkeypatch):
     assert review.claims[0].human_review.status == "accepted"
     assert review.claims[0].human_review.reviewer == "测试审核员"
     assert len(app.get("download_button")) == 3
+
+def test_public_mode_discloses_cloud_processing_and_hides_local_model(tmp_path, monkeypatch):
+    monkeypatch.setenv("XRAY_DEPLOYMENT_MODE", "public")
+    app = make_app(tmp_path, monkeypatch)
+    assert not app.exception
+    assert any("公开演示网页" in warning.value for warning in app.warning)
+    assert not any(button.label == "测试本地模型连接" for button in app.button)

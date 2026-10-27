@@ -6,6 +6,7 @@ from typing import Any
 
 import streamlit as st
 
+from .constants import is_public_deployment
 from .demo_data import list_demo_cases, load_case_meta, load_demo_documents
 from .local_llm import LocalLLMError
 from .models import ParsedDocument, ReviewSession
@@ -42,8 +43,13 @@ def _save_new_session(review: ReviewSession, store: ReviewStore) -> None:
 
 
 def render_new_review(store: ReviewStore, enable_llm: bool, llm_base: str, llm_model: str) -> None:
+    privacy_summary = (
+        "云端公开演示会把上传材料发送到托管服务器处理。"
+        if is_public_deployment()
+        else "上传宣传材料和产品/技术资料。默认不上传任何内容到外部服务。"
+    )
     st.markdown(
-        """
+        f"""
         <div class="bento-grid">
           <article class="bento-card">
             <span class="bento-label">Claim Layer</span>
@@ -71,7 +77,7 @@ def render_new_review(store: ReviewStore, enable_llm: bool, llm_base: str, llm_m
           <div>
             <span class="section-eyebrow">Workspace / New Audit</span>
             <h2>创建审核任务</h2>
-            <p>上传宣传材料和产品/技术资料。默认不上传任何内容到外部服务。</p>
+            <p>{privacy_summary}</p>
           </div>
           <span class="section-chip">Local · Private · Traceable</span>
         </div>
@@ -79,6 +85,8 @@ def render_new_review(store: ReviewStore, enable_llm: bool, llm_base: str, llm_m
         unsafe_allow_html=True,
     )
 
+    if is_public_deployment():
+        st.warning("云端公开演示：上传材料会发送到托管服务器处理，请勿上传敏感或未获授权的真实商业材料。")
     title = st.text_input("审核任务名称", value="农业科技产品宣传材料发布前审核", key="task_title")
 
     left, right = st.columns(2)
@@ -189,4 +197,3 @@ def render_new_review(store: ReviewStore, enable_llm: bool, llm_base: str, llm_m
             st.error(f"分析未完成：{exc}")
         except Exception as exc:
             st.error(f"分析未完成：{exc}")
-
