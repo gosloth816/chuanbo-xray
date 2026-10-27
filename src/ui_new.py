@@ -42,26 +42,43 @@ def _save_new_session(review: ReviewSession, store: ReviewStore) -> None:
 
 
 def render_new_review(store: ReviewStore, enable_llm: bool, llm_base: str, llm_model: str) -> None:
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.markdown(
-            '<div class="xray-card"><strong>01 看主张</strong><br><span class="xray-status">从文案和海报转写中提取可以核验的宣传句子。</span></div>',
-            unsafe_allow_html=True,
-        )
-    with c2:
-        st.markdown(
-            '<div class="xray-card"><strong>02 找证据</strong><br><span class="xray-status">检索产品说明、技术报告和试验资料，保留页码或段落位置。</span></div>',
-            unsafe_allow_html=True,
-        )
-    with c3:
-        st.markdown(
-            '<div class="xray-card"><strong>03 留判断</strong><br><span class="xray-status">区分支持、条件支持、证据不足、资料冲突，再由人确认。</span></div>',
-            unsafe_allow_html=True,
-        )
-    st.write("")
+    st.markdown(
+        """
+        <div class="bento-grid">
+          <article class="bento-card">
+            <span class="bento-label">Claim Layer</span>
+            <span class="bento-index">01</span>
+            <h3>拆出真正可核验的主张</h3>
+            <p>从宣传文案和海报人工转写中分离效果、数值、适用范围与安全表述。</p>
+            <span class="bento-line"></span>
+          </article>
+          <article class="bento-card">
+            <span class="bento-label">Evidence Layer</span>
+            <span class="bento-index">02</span>
+            <h3>把证据定位到原文</h3>
+            <p>检索产品说明、技术报告和试验资料，保留文件名、页码或段落位置。</p>
+            <span class="bento-line"></span>
+          </article>
+          <article class="bento-card">
+            <span class="bento-label">Review Layer</span>
+            <span class="bento-index">03</span>
+            <h3>让判断停在人这里</h3>
+            <p>系统只给证据和风险提示，确认、修改、驳回与最终表述由审核人员完成。</p>
+            <span class="bento-line"></span>
+          </article>
+        </div>
+        <div class="section-head">
+          <div>
+            <span class="section-eyebrow">Workspace / New Audit</span>
+            <h2>创建审核任务</h2>
+            <p>上传宣传材料和产品/技术资料。默认不上传任何内容到外部服务。</p>
+          </div>
+          <span class="section-chip">Local · Private · Traceable</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    st.subheader("创建审核任务")
-    st.caption("上传宣传材料和产品/技术资料。默认不上传任何内容到外部服务。")
     title = st.text_input("审核任务名称", value="农业科技产品宣传材料发布前审核", key="task_title")
 
     left, right = st.columns(2)
@@ -172,5 +189,4 @@ def render_new_review(store: ReviewStore, enable_llm: bool, llm_base: str, llm_m
             st.error(f"分析未完成：{exc}")
         except Exception as exc:
             st.error(f"分析未完成：{exc}")
-
 

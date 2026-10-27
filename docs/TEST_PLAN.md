@@ -77,7 +77,22 @@
 .\.venv\Scripts\python.exe scripts\run_evaluation.py
 ```
 
-## 四、验收标准
+## 四、浏览器实测记录
+
+使用 Microsoft Edge + Playwright 在本地 `127.0.0.1:8501` 实际执行：
+
+- 三份文件上传后成功创建审核任务；
+- 页面显示 6 条宣传主张及证据面板；
+- 页面无异常或分析失败提示；
+- HTML、Markdown、JSON 三个下载按钮均实际产生非空文件；
+- 桌面端和移动端页面截图保存在 `docs/ui-home.png`、`docs/ui-review.png`、`docs/ui-report.png`、`docs/ui-mobile.png`。
+
+机器可读记录：
+
+- `docs/upload_flow.json`
+- `docs/browser_smoke.json`
+
+## 五、验收标准
 
 - 自动测试全部通过，且失败数为 0；
 - 三个合成案例的 14 条主张全部与人工参考答案一致；
@@ -88,7 +103,7 @@
 - 报告中明确标注合成数据、分析模式、模型信息和使用边界；
 - 未配置本地模型时不出现模型成功或 AI 调用成功的虚假提示。
 
-## 五、结果与局限
+## 六、结果与局限
 
 实际结果记录在 `docs/evaluation_results.md` 和 `docs/verification.json`。这些结果只针对合成案例，不能外推为真实业务准确率。
 

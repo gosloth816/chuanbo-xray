@@ -178,11 +178,12 @@ def build_html_report(session: ReviewSession, audit_events: list[dict[str, Any]]
     audit_html = ""
     if audit_events:
         rows = "".join(
-            f"<tr><td>{html.escape(event['timestamp'])}</td><td>{html.escape(event['actor'])}</td><td>{html.escape(event['action'])}</td></tr>"
+            f"<tr><td>{html.escape(event['timestamp'])}</td><td>{html.escape(event['actor'])}</td>"
+            f"<td>{html.escape(event['action'])}</td><td><code>{html.escape(event.get('details_json', ''))}</code></td></tr>"
             for event in audit_events
         )
         audit_html = f"""
-        <section class="panel"><h2>操作留痕</h2><table><thead><tr><th>时间</th><th>操作人</th><th>动作</th></tr></thead><tbody>{rows}</tbody></table></section>
+        <section class="panel"><h2>操作留痕</h2><table><thead><tr><th>时间</th><th>操作人</th><th>动作</th><th>详情</th></tr></thead><tbody>{rows}</tbody></table></section>
         """
     disclosure = "".join(f"<li>{html.escape(value)}</li>" for value in AI_DISCLOSURE.values())
     limitations = "".join(f"<li>{html.escape(item)}</li>" for item in session.limitations)

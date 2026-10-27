@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import json
 from pathlib import Path
 from typing import Any
@@ -35,8 +36,19 @@ def render_report(store: ReviewStore) -> None:
     audit_events = store.get_events(review.run_id)
     counts = review.verdict_counts
     review_counts = review.review_counts
-    st.subheader("导出审核报告")
-    st.caption("报告包含系统判断、原文证据、人工复核记录、模型信息、使用边界和操作留痕。")
+    st.markdown(
+        f"""
+        <div class="section-head">
+          <div>
+            <span class="section-eyebrow">Output / Audit Report</span>
+            <h2>导出审核报告</h2>
+            <p>{html.escape(review.title)} · 系统判断、原文证据、人工复核、使用边界和操作留痕。</p>
+          </div>
+          <span class="section-chip">HTML · Markdown · JSON</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     if review_counts["unreviewed"]:
         st.warning(f"仍有 {review_counts['unreviewed']} 条主张未完成人工复核。当前导出的报告会如实显示未复核状态。")
@@ -98,14 +110,28 @@ def _load_verification() -> dict[str, Any] | None:
 
 
 def render_about() -> None:
-    st.subheader("产品说明与 AI 使用披露")
     st.markdown(
         """
-        **传播 X 光**不是文案生成器，也不是违法或造假判定系统。它帮助山东农业科技企业、植保产品企业的宣传审核人员，
-        在材料发布前核查每条宣传主张是否有上传资料支持、是否遗漏试验条件、是否存在数值冲突，以及哪些内容必须人工确认。
-
-        **关键原则：**没有检索到证据，不等于证明宣传虚假；系统判断不是事实认定，必须由人复核。
-        """
+        <div class="section-head">
+          <div>
+            <span class="section-eyebrow">System / Transparency</span>
+            <h2>产品说明与 AI 使用披露</h2>
+            <p>运行边界、提示词版本、测试记录和本地隐私策略。</p>
+          </div>
+          <span class="section-chip">Verified Locally</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "<strong>传播 X 光</strong>不是文案生成器，也不是违法或造假判定系统。"
+        "它帮助山东农业科技企业、植保产品企业的宣传审核人员，在材料发布前核查每条宣传主张是否有上传资料支持、"
+        "是否遗漏试验条件、是否存在数值冲突，以及哪些内容必须人工确认。",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "<strong>关键原则：</strong>没有检索到证据，不等于证明宣传虚假；系统判断不是事实认定，必须由人复核。",
+        unsafe_allow_html=True,
     )
 
     st.markdown("### 工作流")

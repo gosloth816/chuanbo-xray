@@ -28,8 +28,19 @@ def build_llm(enable_llm: bool, llm_base: str, llm_model: str) -> LocalLLMClient
 
 def render_sidebar(store: ReviewStore) -> tuple[bool, str, str]:
     with st.sidebar:
-        st.markdown(f"### {APP_NAME}")
-        st.caption(APP_SUBTITLE)
+        st.markdown(
+            f"""
+            <div class="xray-brand">
+              <div class="xray-brand-mark">XR</div>
+              <div class="xray-brand-copy">
+                <strong>{APP_NAME}</strong>
+                <span>{APP_SUBTITLE}</span>
+              </div>
+            </div>
+            <div class="xray-side-status">本地私有运行 · 材料不离开本机</div>
+            """,
+            unsafe_allow_html=True,
+        )
         st.markdown("---")
         st.markdown("**隐私与运行边界**")
         st.caption("材料只在当前电脑处理；不包含付费接口；不会上传到远程仓库或第三方服务。")

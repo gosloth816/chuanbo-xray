@@ -176,10 +176,18 @@ def render_reviewer(store: ReviewStore, enable_llm: bool, llm_base: str, llm_mod
 
     counts = review.verdict_counts
     review_counts = review.review_counts
-    st.subheader(review.title)
-    st.caption(
-        f"审核编号 {review.run_id}｜{ANALYSIS_MODE_LABELS.get(review.mode, review.mode)}｜"
-        f"模型 {review.model_name or '未调用'}｜提示词 {review.prompt_version}"
+    st.markdown(
+        f"""
+        <div class="section-head">
+          <div>
+            <span class="section-eyebrow">Audit Workspace / Evidence Review</span>
+            <h2>{html.escape(review.title)}</h2>
+            <p>审核编号 {html.escape(review.run_id)} · {html.escape(ANALYSIS_MODE_LABELS.get(review.mode, review.mode))} · 模型 {html.escape(review.model_name or '未调用')} · 提示词 {html.escape(review.prompt_version)}</p>
+          </div>
+          <span class="section-chip">{len(review.claims)} Claims · Human Review</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
     if review.is_synthetic:
         st.warning("当前任务包含明确标注的合成测试材料，只用于功能演示，不能作为真实产品结论。")
@@ -251,5 +259,4 @@ def render_reviewer(store: ReviewStore, enable_llm: bool, llm_base: str, llm_mod
                     st.rerun()
                 except (AnalysisError, LocalLLMError) as exc:
                     st.error(f"补充主张失败：{exc}")
-
 

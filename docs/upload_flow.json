@@ -1,0 +1,17 @@
+{
+  "ran_at": "2026-10-27T12:42:05.076Z",
+  "url": "http://127.0.0.1:8501",
+  "files": [
+    "promotional_copy.txt",
+    "product_manual.txt",
+    "trial_summary.txt"
+  ],
+  "checks": {
+    "upload_inputs_found": true,
+    "review_created": true,
+    "six_claims": true,
+    "evidence_panel": true,
+    "no_exception_text": true
+  },
+  "passed": true
+}

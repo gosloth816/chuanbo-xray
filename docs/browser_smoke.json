@@ -1,0 +1,35 @@
+{
+  "ran_at": "2026-10-27T12:49:19.996Z",
+  "url": "http://127.0.0.1:8501",
+  "browser": "Microsoft Edge (Playwright headless)",
+  "synthetic_demo_case": true,
+  "screenshots": [
+    "docs/ui-home.png",
+    "docs/ui-review.png",
+    "docs/ui-report.png",
+    "docs/ui-about.png",
+    "docs/ui-mobile.png",
+    "docs/ui-upload-review.png"
+  ],
+  "downloads": [
+    {
+      "button": "下载 HTML 报告",
+      "suggested_filename": "绿盾一号合成演示案例-审核报告.html",
+      "size_bytes": 21852,
+      "non_empty": true
+    },
+    {
+      "button": "下载 Markdown 报告",
+      "suggested_filename": "绿盾一号合成演示案例-审核报告.md",
+      "size_bytes": 7894,
+      "non_empty": true
+    },
+    {
+      "button": "下载结构化 JSON",
+      "suggested_filename": "绿盾一号合成演示案例-审核记录.json",
+      "size_bytes": 26237,
+      "non_empty": true
+    }
+  ],
+  "passed": true
+}

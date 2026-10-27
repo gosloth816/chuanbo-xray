@@ -12,4 +12,4 @@ if ($LASTEXITCODE -ne 0) {
     & $Python -m pip install -r requirements.txt
 }
 Write-Host "Starting Chuanbo X-Ray locally. No paid service or remote upload is used."
-& $Python -m streamlit run app.py
+& $Python -m streamlit run app.py --server.address 127.0.0.1
