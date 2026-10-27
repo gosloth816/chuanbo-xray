@@ -37,13 +37,63 @@ html, body, [class*="css"] {
 }
 
 header[data-testid="stHeader"] {
-  display: none !important;
+  background: transparent;
+  pointer-events: none;
 }
 
-[data-testid="stToolbar"],
+[data-testid="stMainMenu"],
 [data-testid="stAppDeployButton"],
 [data-testid="stDecoration"] {
   display: none !important;
+}
+
+[data-testid="stToolbar"] {
+  background: transparent !important;
+  pointer-events: none !important;
+}
+
+[data-testid="stExpandSidebarButton"],
+[data-testid="stSidebarCollapseButton"] {
+  display: flex !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  position: fixed !important;
+  top: 12px !important;
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  min-height: 38px !important;
+  z-index: 10000 !important;
+}
+
+[data-testid="stExpandSidebarButton"] {
+  left: 12px !important;
+}
+
+[data-testid="stSidebarCollapseButton"] {
+  left: 208px !important;
+}
+
+[data-testid="stExpandSidebarButton"] button,
+[data-testid="stSidebarCollapseButton"] button {
+  display: inline-flex !important;
+  visibility: visible !important;
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  min-height: 38px !important;
+  padding: 0 !important;
+  border-radius: 12px;
+  border: 1px solid rgba(21,122,90,0.18);
+  background: rgba(255,253,248,0.92);
+  box-shadow: 0 8px 24px rgba(15,55,40,0.14);
+  backdrop-filter: blur(12px);
+}
+
+[data-testid="stExpandSidebarButton"] button:hover,
+[data-testid="stSidebarCollapseButton"] button:hover {
+  border-color: rgba(21,122,90,0.4);
+  background: #fffdf8;
 }
 
 .block-container {
@@ -772,4 +822,3 @@ div[data-testid="stExpander"] {
     transition-duration: 0.01ms !important;
   }
 }
-

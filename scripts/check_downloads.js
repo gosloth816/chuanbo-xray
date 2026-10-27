@@ -23,7 +23,7 @@ const fs = require('fs');
     url: 'http://127.0.0.1:8501',
     browser: 'Microsoft Edge (Playwright headless)',
     synthetic_demo_case: true,
-    screenshots: ['docs/ui-home.png', 'docs/ui-review.png', 'docs/ui-report.png', 'docs/ui-about.png', 'docs/ui-mobile.png', 'docs/ui-upload-review.png'],
+    screenshots: ['docs/ui-home.png', 'docs/ui-review.png', 'docs/ui-report.png', 'docs/ui-about.png', 'docs/ui-mobile.png', 'docs/ui-upload-review.png', 'docs/ui-sidebar-open.png'],
     downloads: results,
     passed: results.every(item => item.non_empty),
   };
@@ -32,5 +32,3 @@ const fs = require('fs');
   if (!record.passed) process.exit(1);
   await browser.close();
 })().catch(err => { console.error(err); process.exit(1); });
-
-
