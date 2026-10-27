@@ -1,0 +1,15 @@
+{
+  "case_id": "case_01",
+  "case_name": "绿盾一号合成演示案例",
+  "is_synthetic": true,
+  "description": "用于演示支持、条件支持、资料冲突、证据不足和人工复核流程的合成测试材料。",
+  "source_notice": "全部内容为比赛合成测试数据，不对应真实产品、企业、试验或论文。",
+  "expected_verdicts": {
+    "绿盾一号生物制剂，专为番茄灰霉病绿色防控研发。": "supported",
+    "本产品对番茄灰霉病防效可达82.4%。": "conditionally_supported",
+    "使用绿盾一号后，番茄灰霉病防效可达92%。": "conflicting",
+    "本产品可减少化学农药使用量50%。": "insufficient",
+    "本产品适用于所有番茄品种。": "insufficient",
+    "产品安全无残留。": "insufficient"
+  }
+}
