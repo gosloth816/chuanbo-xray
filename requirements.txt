@@ -1,10 +1,7 @@
-# 传播 X 光 V2 运行依赖
-streamlit==1.51.0
-pypdf==6.4.0
-python-docx==1.2.0
-pandas==2.3.3
-pillow==12.1.0
-requests==2.34.2
-
-# 测试依赖
-pytest==9.0.2
+# 传播 X 光运行依赖
+streamlit>=1.51,<2
+pypdf>=5,<7
+python-docx>=1.1,<2
+pandas>=2.2,<3
+pillow>=10,<13
+requests>=2.31,<3
