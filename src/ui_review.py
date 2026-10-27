@@ -184,6 +184,8 @@ def render_reviewer(store: ReviewStore, enable_llm: bool, llm_base: str, llm_mod
     if review.is_synthetic:
         st.warning("当前任务包含明确标注的合成测试材料，只用于功能演示，不能作为真实产品结论。")
     for warning in review.warnings:
+        if review.is_synthetic and "本次审核包含明确标注的合成测试材料" in warning:
+            continue
         st.info(warning)
 
     cols = st.columns(5)
@@ -249,4 +251,5 @@ def render_reviewer(store: ReviewStore, enable_llm: bool, llm_base: str, llm_mod
                     st.rerun()
                 except (AnalysisError, LocalLLMError) as exc:
                     st.error(f"补充主张失败：{exc}")
+
 

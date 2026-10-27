@@ -13,7 +13,7 @@ def inject_css() -> None:
         <style>
         :root { --ink:#18271f; --muted:#66756d; --line:#dfe8e2; --brand:#13795b; --surface:#fff; }
         .stApp { background: radial-gradient(circle at 8% 0%, #e4f1e8 0, #f5f7f4 34%, #f5f7f4 100%); }
-        [data-testid="stHeader"] { background: transparent; }
+        [data-testid="stHeader"] { background: transparent; }`n        [data-testid="stToolbar"] { visibility: hidden; }
         .block-container { max-width: 1280px; padding-top: 2rem; padding-bottom: 4rem; }
         .xray-hero { position:relative; overflow:hidden; border-radius:26px; padding:34px 38px; color:#fff;
             background:linear-gradient(128deg,#083d2e 0%,#13795b 55%,#73a982 100%);
@@ -31,7 +31,7 @@ def inject_css() -> None:
             min-height:92px; box-shadow:0 5px 18px rgba(20,60,45,.04); }
         .xray-metric span { color:var(--muted); font-size:12px; display:block; }
         .xray-metric strong { color:var(--ink); font-size:29px; line-height:1.25; }
-        .xray-metric small { color:var(--muted); font-size:11px; }
+        .xray-metric small { display:block; color:var(--muted); font-size:11px; line-height:1.45; margin-top:4px; }
         .xray-badge { display:inline-block; color:#fff; font-weight:700; border-radius:999px;
             padding:5px 11px; font-size:12px; letter-spacing:.02em; }
         .xray-status { color:var(--muted); font-size:13px; }
@@ -69,3 +69,5 @@ def render_hero() -> None:
         """,
         unsafe_allow_html=True,
     )
+
+

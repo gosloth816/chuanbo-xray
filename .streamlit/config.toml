@@ -1,5 +1,6 @@
 [server]
 headless = true
+maxUploadSize = 20
 runOnSave = false
 
 [browser]
@@ -12,3 +13,4 @@ backgroundColor = "#F5F7F4"
 secondaryBackgroundColor = "#FFFFFF"
 textColor = "#1D2A24"
 font = "sans serif"
+

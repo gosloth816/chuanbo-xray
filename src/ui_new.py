@@ -126,6 +126,7 @@ def render_new_review(store: ReviewStore, enable_llm: bool, llm_base: str, llm_m
                 )
                 _save_new_session(review, store)
             st.success("合成演示案例已完成。请切换到“证据审查台”查看主张和原文证据。")
+            st.rerun()
         except (AnalysisError, DocumentParseError) as exc:
             st.error(f"演示案例运行失败：{exc}")
         except Exception as exc:
@@ -166,6 +167,7 @@ def render_new_review(store: ReviewStore, enable_llm: bool, llm_base: str, llm_m
                 review = analyze_documents(title=title, documents=documents, mode=mode, llm=llm)
                 _save_new_session(review, store)
             st.success(f"诊断完成：共识别 {len(review.claims)} 条宣传主张。请切换到“证据审查台”继续人工复核。")
+            st.rerun()
         except (AnalysisError, DocumentParseError, LocalLLMError) as exc:
             st.error(f"分析未完成：{exc}")
         except Exception as exc:
