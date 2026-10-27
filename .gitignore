@@ -21,3 +21,5 @@ exports/
 Thumbs.db
 .vscode/
 .idea/
+.tools/
+
