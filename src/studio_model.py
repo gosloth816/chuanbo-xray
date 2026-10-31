@@ -43,6 +43,8 @@ class StudioModel:
         self.base = str(setting("STUDIO_MODEL_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1" if public else "http://127.0.0.1:11434/v1")).rstrip("/")
         self.name = str(setting("STUDIO_MODEL_NAME", "" if public else "qwen2.5vl:3b"))
         self.key = str(setting("STUDIO_MODEL_API_KEY"))
+        thinking = setting("STUDIO_ENABLE_THINKING", None)
+        self.thinking = (False if self.name == "qwen3.8-flash" else None) if thinking is None else str(thinking).lower() == "true"
         parsed = urlparse(self.base)
         self.remote = parsed.hostname not in {"localhost", "127.0.0.1", "::1"}
         if parsed.username or parsed.password or parsed.query or parsed.fragment or not parsed.hostname:
@@ -67,10 +69,13 @@ class StudioModel:
         if image:
             content.append({"type": "image_url", "image_url": {"url": prepare_image(image)}})
         headers = {"Authorization": f"Bearer {self.key}"} if self.key else {}
+        payload = {"model": self.name, "temperature": 0.3, "max_tokens": 2048,
+                   "messages": [{"role": "system", "content": instruction}, {"role": "user", "content": content}]}
+        if self.thinking is not None:
+            payload["enable_thinking"] = self.thinking
         try:
             response = requests.post(self.base + "/chat/completions", headers=headers, timeout=(10, 100),
-                allow_redirects=False, json={"model": self.name, "temperature": 0.3,
-                "messages": [{"role": "system", "content": instruction}, {"role": "user", "content": content}]})
+                allow_redirects=False, json=payload)
             if response.status_code != 200:
                 raise StudioError(f"模型服务返回状态 {response.status_code}，请检查模型配置或额度。")
             raw = response.json()["choices"][0]["message"]["content"]

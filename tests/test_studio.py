@@ -105,3 +105,19 @@ def test_public_app_without_model_still_runs_demo(tmp_path, monkeypatch):
     assert not app.exception
     assert next(b for b in app.button if b.label == "生成多渠道文案").disabled
     assert not next(b for b in app.button if b.label == "一键送至传播 X 光").disabled
+
+
+def test_flash_uses_direct_answer_and_bounded_output(monkeypatch):
+    captured = {}
+    class Response:
+        status_code = 200
+        def json(self):
+            return {"choices": [{"message": {"content": '{"ok":true}'}}]}
+    def post(*args, **kwargs):
+        captured.update(kwargs["json"])
+        return Response()
+    monkeypatch.setattr("requests.post", post)
+    model = StudioModel(settings={"STUDIO_MODEL_NAME": "qwen3.8-flash"})
+    assert model.call("测试", {})["ok"]
+    assert captured["enable_thinking"] is False
+    assert captured["max_tokens"] == 2048
