@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import time
 from typing import Any
 
 from .constants import LIMITATIONS, PROMPT_VERSION
@@ -18,6 +19,15 @@ from .models import Claim, DocumentChunk, EvidenceItem, ParsedDocument, ReviewSe
 
 class AnalysisError(RuntimeError):
     """分析流程无法可靠完成时抛出。"""
+
+
+def _apply_evidence_scope(claim: Claim, documents: list[ParsedDocument]) -> None:
+    references = [doc for doc in documents if doc.role == "reference"]
+    if references and all(doc.metadata.get("scope") == "general_guidance" for doc in references):
+        if any(term in claim.text for term in ("本产品", "这款产品", "该产品")) or re.search(r"(?:增产|提高|减少|降低).{0,12}\d+(?:\.\d+)?%", claim.text):
+            claim.verdict = "insufficient"
+            claim.rationale = "当前参考资料全部为通用技术指导，不能证明某个具体产品或方案的效果、登记范围或安全性。即使词语或数值吻合，也需要对应产品的直接证据。"
+            claim.suggested_revision = "删除没有单品证据的效果承诺；补充该产品的可核对资料及适用条件后再复核。"
 
 
 def _normalize_text(text: str) -> str:
@@ -60,13 +70,14 @@ def _evidence_from_llm(
     items: list[EvidenceItem] = []
     warnings: list[str] = []
     seen: set[str] = set()
+    candidate_ids = {item["chunk_id"] for item in candidates}
     for raw in raw_evidence:
         if not isinstance(raw, dict):
             warnings.append("模型返回了无法识别的证据条目，已忽略。")
             continue
         chunk_id = str(raw.get("chunk_id", "")).strip()
         quote = str(raw.get("quote", "")).strip()
-        if chunk_id not in chunk_map:
+        if chunk_id not in candidate_ids or chunk_id not in chunk_map:
             warnings.append(f"模型引用了不存在的候选证据 {chunk_id or '（空）'}，已忽略。")
             continue
         if chunk_id in seen:
@@ -126,9 +137,9 @@ def _analyze_claim(
     rationale = raw_result["rationale"]
     if evidence_warnings:
         rationale += "\n\n引用校验提示：" + " ".join(evidence_warnings)
-    if verdict != "insufficient" and not valid_evidence:
+    if evidence_warnings or (verdict != "insufficient" and not valid_evidence):
         verdict = "manual_review"
-        rationale += "\n\n模型判断未附带通过原文逐字校验的证据，因此转为待人工核验。"
+        rationale += "\n\n模型引用存在异常或判断缺少有效证据，因此转为待人工核验。"
     if any(not item.quote_valid for item in llm_evidence):
         verdict = "manual_review"
     return Claim(
@@ -150,6 +161,7 @@ def analyze_documents(
     mode: str = "offline_rules",
     llm: LocalLLMClient | None = None,
 ) -> ReviewSession:
+    started = time.perf_counter()
     if mode not in {"offline_rules", "local_llm"}:
         raise AnalysisError("未知分析模式。")
     promotion_documents = [doc for doc in documents if doc.role in {"promotion", "poster"}]
@@ -199,7 +211,11 @@ def analyze_documents(
             )
         )
 
-    return ReviewSession.create(
+    # 通用技术指导与具体产品试验属于不同证据层级，避免把背景知识当成单品证明。
+    for claim in claims:
+        _apply_evidence_scope(claim, documents)
+
+    session = ReviewSession.create(
         title=title.strip() or "未命名审核任务",
         mode=mode,
         model_name=llm.model if llm else "",
@@ -210,6 +226,8 @@ def analyze_documents(
         limitations=list(LIMITATIONS),
         is_synthetic=is_synthetic,
     )
+    session.analysis_seconds = round(time.perf_counter() - started, 4)
+    return session
 
 
 def add_manual_claim(
@@ -238,5 +256,6 @@ def add_manual_claim(
         claim_id=claim_id,
     )
     claim.extraction_method = "manual"
+    _apply_evidence_scope(claim, session.documents)
     session.claims.append(claim)
     return claim

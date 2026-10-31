@@ -1,0 +1,141 @@
+{
+  "ran_at": "2026-10-31T15:21:06+08:00",
+  "mode": "offline_rules",
+  "sources": [
+    {
+      "source_id": "jinan_wheat_2025",
+      "title": "2025年小麦春季重大病虫害防控技术方案",
+      "url": "https://jnny.jinan.gov.cn/col560/art/2025/art_560_4791419.html",
+      "publisher": "济南市农业农村局（转载全国农技推广资料）",
+      "published_at": "2025-04-17",
+      "retrieved_at": "2026-10-31",
+      "sha256": "74ebc13937e196b021c21553ba0eeb8e18d321b7ba6fa2bf4cf83f2f064454aa",
+      "text_sha256": "2871186a969511222cd32004eeaacf2bad10d629192f53de36fe483014191d9a",
+      "file": "jinan_wheat_2025.txt",
+      "raw_file": "jinan_wheat_2025.html",
+      "scope": "general_guidance",
+      "license": "公开政府技术信息，保留署名与链接；未确认开放许可，不代表品牌授权或产品效果证明。"
+    },
+    {
+      "source_id": "jinan_spray_2025",
+      "title": "全国农技中心印发小麦“一喷三防”技术指导意见",
+      "url": "https://jnny.jinan.gov.cn/col562/art/2025/art_562_4791421.html",
+      "publisher": "济南市农业农村局（转载全国农技推广资料）",
+      "published_at": "2025-04-17",
+      "retrieved_at": "2026-10-31",
+      "sha256": "211e9c95963ba9f1b249d575e02edf609ccffad9921a04f2d5ccfa1ac25b7d99",
+      "text_sha256": "160dbaebc3e5e4f4cef048f9cf26bfc8b3e39e2acad3049aee997356c07ee36d",
+      "file": "jinan_spray_2025.txt",
+      "raw_file": "jinan_spray_2025.html",
+      "scope": "general_guidance",
+      "license": "公开政府技术信息，保留署名与链接；未确认开放许可，不代表品牌授权或产品效果证明。"
+    }
+  ],
+  "notice": "2份通用技术依据 + 9条输入（1条技术原文、7条自编压力测试、1条真实企业宣传节选）。参考类别由本次开发拟定，未经独立专家标注，不是外部独立测试集或真实用户反馈。",
+  "expected_claims": 9,
+  "extracted_claims": 9,
+  "exact_matches": 7,
+  "expected_risks": 8,
+  "flagged_risks": 8,
+  "rows": [
+    {
+      "case_id": "evidence_scope",
+      "text": "小麦中后期“一喷三防”技术能防病虫、防干热风、防早衰，增粒重，对保障小麦稳产丰收具有重要作用。",
+      "origin": "公开原文摘录",
+      "expected": "supported",
+      "actual": "supported",
+      "extracted": true,
+      "exact_match": true,
+      "risk": false,
+      "risk_flagged": false
+    },
+    {
+      "case_id": "evidence_scope",
+      "text": "本产品能够提高小麦防效，保证增产30%。",
+      "origin": "自编压力测试",
+      "expected": "insufficient",
+      "actual": "insufficient",
+      "extracted": true,
+      "exact_match": true,
+      "risk": true,
+      "risk_flagged": true
+    },
+    {
+      "case_id": "evidence_scope",
+      "text": "本产品对所有作物均适用，安全无残留。",
+      "origin": "自编压力测试",
+      "expected": "insufficient",
+      "actual": "insufficient",
+      "extracted": true,
+      "exact_match": true,
+      "risk": true,
+      "risk_flagged": true
+    },
+    {
+      "case_id": "evidence_scope",
+      "text": "本产品能够减少农药用量50%。",
+      "origin": "自编压力测试",
+      "expected": "insufficient",
+      "actual": "insufficient",
+      "extracted": true,
+      "exact_match": true,
+      "risk": true,
+      "risk_flagged": true
+    },
+    {
+      "case_id": "source_difference",
+      "text": "所有地区小麦施药后4小时遇雨都不需要补治。",
+      "origin": "自编压力测试",
+      "expected": "manual_review",
+      "actual": "conflicting",
+      "extracted": true,
+      "exact_match": false,
+      "risk": true,
+      "risk_flagged": true
+    },
+    {
+      "case_id": "source_difference",
+      "text": "本产品可减少小麦病虫害危害损失率至5%以内。",
+      "origin": "自编压力测试",
+      "expected": "insufficient",
+      "actual": "insufficient",
+      "extracted": true,
+      "exact_match": true,
+      "risk": true,
+      "risk_flagged": true
+    },
+    {
+      "case_id": "source_difference",
+      "text": "所有植保无人机每亩施药液量都可以减少到0.5升。",
+      "origin": "自编压力测试",
+      "expected": "manual_review",
+      "actual": "insufficient",
+      "extracted": true,
+      "exact_match": false,
+      "risk": true,
+      "risk_flagged": true
+    },
+    {
+      "case_id": "source_difference",
+      "text": "本产品防治小麦赤霉病的防效可达99%。",
+      "origin": "自编压力测试",
+      "expected": "insufficient",
+      "actual": "insufficient",
+      "extracted": true,
+      "exact_match": true,
+      "risk": true,
+      "risk_flagged": true
+    },
+    {
+      "case_id": "real_announcement",
+      "text": "农药使用量平均每亩减少26.7%",
+      "origin": "企业官网原文节选，非自编",
+      "expected": "insufficient",
+      "actual": "insufficient",
+      "extracted": true,
+      "exact_match": true,
+      "risk": true,
+      "risk_flagged": true
+    }
+  ]
+}

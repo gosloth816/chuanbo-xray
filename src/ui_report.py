@@ -21,6 +21,8 @@ from .constants import (
     VERDICT_LABELS,
 )
 from .models import ReviewSession
+from .readiness import review_readiness
+from .metrics import workflow_metrics
 from .report import build_html_report, build_json_report, build_markdown_report, safe_filename
 from .storage import ReviewStore
 
@@ -49,6 +51,21 @@ def render_report(store: ReviewStore) -> None:
         """,
         unsafe_allow_html=True,
     )
+
+    metrics = workflow_metrics(review)
+    cols = st.columns(3)
+    elapsed = metrics["analysis_seconds"]
+    cols[0].metric("程序分析耗时", f"{elapsed:.3f} 秒" if elapsed is not None else "未记录")
+    cols[1].metric("人工复核进度", f"{metrics['reviewed_claim_count']}/{metrics['claim_count']}")
+    cols[2].metric("引用逐字校验", f"{metrics['valid_quote_count']}/{metrics['quote_count']}")
+    st.caption(metrics["notice"])
+    readiness = review_readiness(review)
+    st.info(f"报告状态：{readiness['status']}。{readiness['notice']}")
+    with st.expander(f"待处理事项（{len(readiness['issues'])} 条主张或任务）"):
+        for item in readiness["issues"]:
+            st.write(f"{item['claim_id']}：{'；'.join(item['reasons'])}")
+        if not readiness["issues"]:
+            st.write("无记录完整性问题。")
 
     if review_counts["unreviewed"]:
         st.warning(f"仍有 {review_counts['unreviewed']} 条主张未完成人工复核。当前导出的报告会如实显示未复核状态。")

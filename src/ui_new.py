@@ -14,6 +14,7 @@ from .parsing import DocumentParseError, parse_document_bytes, parse_text_docume
 from .pipeline import AnalysisError, analyze_documents
 from .storage import ReviewStore
 from .ui_sidebar import build_llm
+from .ui_public import render_public_cases
 
 
 DOC_ACCEPT = ["txt", "md", "pdf", "docx"]
@@ -43,50 +44,15 @@ def _save_new_session(review: ReviewSession, store: ReviewStore) -> None:
 
 
 def render_new_review(store: ReviewStore, enable_llm: bool, llm_base: str, llm_model: str) -> None:
-    privacy_summary = (
-        "云端公开演示会把上传材料发送到托管服务器处理。"
-        if is_public_deployment()
-        else "上传宣传材料和产品/技术资料。默认不上传任何内容到外部服务。"
-    )
-    st.markdown(
-        f"""
-        <div class="bento-grid">
-          <article class="bento-card">
-            <span class="bento-label">Claim Layer</span>
-            <span class="bento-index">01</span>
-            <h3>拆出真正可核验的主张</h3>
-            <p>从宣传文案和海报人工转写中分离效果、数值、适用范围与安全表述。</p>
-            <span class="bento-line"></span>
-          </article>
-          <article class="bento-card">
-            <span class="bento-label">Evidence Layer</span>
-            <span class="bento-index">02</span>
-            <h3>把证据定位到原文</h3>
-            <p>检索产品说明、技术报告和试验资料，保留文件名、页码或段落位置。</p>
-            <span class="bento-line"></span>
-          </article>
-          <article class="bento-card">
-            <span class="bento-label">Review Layer</span>
-            <span class="bento-index">03</span>
-            <h3>让判断停在人这里</h3>
-            <p>系统只给证据和风险提示，确认、修改、驳回与最终表述由审核人员完成。</p>
-            <span class="bento-line"></span>
-          </article>
-        </div>
-        <div class="section-head">
-          <div>
-            <span class="section-eyebrow">Workspace / New Audit</span>
-            <h2>创建审核任务</h2>
-            <p>{privacy_summary}</p>
-          </div>
-          <span class="section-chip">Local · Private · Traceable</span>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
+    st.markdown("<div class='page-heading'><h1>传播 X 光</h1><p>农业科技宣传材料发布前审核。</p></div>", unsafe_allow_html=True)
     if is_public_deployment():
-        st.warning("云端公开演示：上传材料会发送到托管服务器处理，请勿上传敏感或未获授权的真实商业材料。")
+        st.warning("公开演示：上传材料会发送到托管服务器，请勿上传敏感或未获授权的材料。")
+    render_public_cases(store, enable_llm, llm_base, llm_model)
+    with st.expander("上传材料，新建审核任务", expanded=False):
+        _render_upload_form(store, enable_llm, llm_base, llm_model)
+
+
+def _render_upload_form(store: ReviewStore, enable_llm: bool, llm_base: str, llm_model: str) -> None:
     title = st.text_input("审核任务名称", value="农业科技产品宣传材料发布前审核", key="task_title")
 
     left, right = st.columns(2)

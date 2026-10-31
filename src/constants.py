@@ -5,7 +5,7 @@ import os
 APP_NAME = "传播 X 光"
 APP_SUBTITLE = "农业科技产品宣传材料诊断与证据核验工具"
 APP_VERSION = "2.0.0"
-PROMPT_VERSION = "xray-claim-review-v2.0"
+PROMPT_VERSION = "xray-claim-review-v2.2"
 
 VERDICT_LABELS = {
     "supported": "有资料支持",

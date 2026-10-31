@@ -6,6 +6,7 @@ from datetime import datetime
 import html
 import re
 from typing import Any
+from urllib.parse import urlparse
 
 from .constants import (
     AI_DISCLOSURE,
@@ -18,10 +19,21 @@ from .constants import (
     VERDICT_LABELS,
 )
 from .models import ReviewSession, dumps_json
+from .readiness import review_readiness
+from .metrics import workflow_metrics
 
 
 def _now() -> str:
     return datetime.now().astimezone().isoformat(timespec="seconds")
+
+
+def source_provenance(session: ReviewSession) -> list[dict]:
+    return [
+        {"title": doc.metadata.get("title", doc.name), **{key: doc.metadata.get(key, "") for key in
+          ("url", "publisher", "published_at", "retrieved_at", "sha256", "scope", "license")}}
+        for doc in session.documents
+        if urlparse(str(doc.metadata.get("url", ""))).scheme in {"http", "https"}
+    ]
 
 
 def safe_filename(title: str) -> str:
@@ -33,6 +45,9 @@ def report_payload(session: ReviewSession, audit_events: list[dict[str, Any]] | 
     return {
         "report_standard": "传播X光审核报告-v2",
         "generated_at": _now(),
+        "review_readiness": review_readiness(session),
+        "workflow_metrics": workflow_metrics(session),
+        "source_provenance": source_provenance(session),
         "application": {"name": APP_NAME, "subtitle": APP_SUBTITLE, "version": APP_VERSION},
         "session": session.to_dict(),
         "audit_events": audit_events or [],
@@ -100,7 +115,20 @@ def build_markdown_report(session: ReviewSession, audit_events: list[dict[str, A
         "## 宣传主张与证据",
         "",
     ]
+    readiness = review_readiness(session)
+    lines[2:2] = [f"**报告状态：{readiness['status']}**", "", readiness["notice"], ""]
+    metrics = workflow_metrics(session)
+    elapsed = metrics['analysis_seconds']
+    lines.extend(["### 运行指标", "", f"- 程序分析耗时：{str(elapsed) + ' 秒' if elapsed is not None else '未记录'}", f"- 人工复核：{metrics['reviewed_claim_count']} / {metrics['claim_count']}", f"- 引用逐字校验：{metrics['valid_quote_count']} / {metrics['quote_count']}", f"- 无检索证据主张：{metrics['claims_without_evidence']}", f"- {metrics['notice']}", "", "### 待处理事项", ""])
+    lines.extend(f"- {item['claim_id']}：{'；'.join(item['reasons'])}" for item in readiness["issues"])
+    if not readiness["issues"]:
+        lines.append("- 无记录完整性问题。")
     lines.extend(_claim_markdown(claim, index) for index, claim in enumerate(session.claims, start=1))
+    lines.extend(["", "## 公开资料来源", ""])
+    for source in source_provenance(session):
+        lines.extend([f"- {source['title']}：{source['url']}",
+                      f"  发布：{source['published_at']}；获取：{source['retrieved_at']}；SHA-256：{source['sha256']}",
+                      f"  {source['license']}"])
     lines.extend(["", "## 使用边界", ""])
     lines.extend(f"- {item}" for item in session.limitations)
     lines.extend(["", "## AI 使用披露", ""])
@@ -188,6 +216,22 @@ def build_html_report(session: ReviewSession, audit_events: list[dict[str, Any]]
     disclosure = "".join(f"<li>{html.escape(value)}</li>" for value in AI_DISCLOSURE.values())
     limitations = "".join(f"<li>{html.escape(item)}</li>" for item in session.limitations)
     warnings = "".join(f"<li>{html.escape(item)}</li>" for item in session.warnings)
+    provenance = "".join(
+        f'<li><a href="{html.escape(source["url"], quote=True)}">{html.escape(source["title"])}</a>'
+        f'<p>发布：{html.escape(source["published_at"])} · 获取：{html.escape(source["retrieved_at"])}<br>'
+        f'SHA-256：{html.escape(source["sha256"])}<br>{html.escape(source["license"])}</p></li>'
+        for source in source_provenance(session)
+    )
+    source_block = f'<section class="panel"><h2>公开资料来源</h2><ul>{provenance}</ul></section>' if provenance else ""
+    readiness = review_readiness(session)
+    readiness_items = "".join(
+        f"<li>{html.escape(item['claim_id'])}：{html.escape('；'.join(item['reasons']))}</li>"
+        for item in readiness["issues"]
+    ) or "<li>无记录完整性问题。</li>"
+    metrics = workflow_metrics(session)
+    elapsed_label = str(metrics['analysis_seconds']) + ' 秒' if metrics['analysis_seconds'] is not None else '未记录'
+    metrics_block = f'<section class="panel"><h2>运行指标</h2><p>程序分析耗时：{elapsed_label} · 人工复核：{metrics["reviewed_claim_count"]}/{metrics["claim_count"]} · 引用校验：{metrics["valid_quote_count"]}/{metrics["quote_count"]} · 无证据主张：{metrics["claims_without_evidence"]}</p><p>{metrics["notice"]}</p></section>'
+    readiness_block = f'<section class="panel warning"><h2>报告状态：{readiness["status"]}</h2><p>{html.escape(readiness["notice"])}</p><ul>{readiness_items}</ul></section>'
     warning_block = f'<section class="panel warning"><h2>运行提示</h2><ul>{warnings}</ul></section>' if warnings else ""
     return f"""<!doctype html>
 <html lang="zh-CN">
@@ -230,9 +274,12 @@ table{{width:100%;border-collapse:collapse}} th,td{{text-align:left;padding:10px
   </div>
   <div class="metrics">{summary_cards}</div>
 </section>
+{metrics_block}
+{readiness_block}
 {warning_block}
 {''.join(claim_sections)}
 {audit_html}
+{source_block}
 <section class="panel"><h2>使用边界</h2><ul>{limitations}</ul></section>
 <section class="panel"><h2>AI 使用与隐私披露</h2><ul>{disclosure}</ul></section>
 <p class="foot">本报告为宣传材料发布前辅助审核记录，不构成真实性、合法性或合规性结论。生成时间：{html.escape(_now())}</p>

@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "checked_at": "2026-10-31T07:54:32.631Z",
+  "real_model_verified": false,
+  "checks": [
+    "合成示例加载",
+    "文案编辑与留痕",
+    "JSON导出",
+    "传播X光送审",
+    "手机无横向溢出"
+  ]
+}

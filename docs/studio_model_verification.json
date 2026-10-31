@@ -1,0 +1,9 @@
+{
+  "checked_at": "2026-10-31T15:49:55+08:00",
+  "prompt_version": "qilu-studio-v1.0",
+  "real_generation": false,
+  "vision_verified": false,
+  "notice": "仅用合成事实检查真实文本生成调用；图片识别须另行验证。",
+  "model": "qwen2.5vl:3b",
+  "error": "未能连接模型服务，请先配置并启动服务；此次没有生成AI结果。"
+}

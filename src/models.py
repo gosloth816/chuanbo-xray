@@ -136,6 +136,7 @@ class ReviewSession:
     limitations: list[str] = field(default_factory=list)
     is_synthetic: bool = False
     notes: str = ""
+    analysis_seconds: float | None = None
 
     @classmethod
     def create(

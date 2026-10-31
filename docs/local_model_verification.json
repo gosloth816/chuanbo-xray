@@ -1,0 +1,7 @@
+{
+  "checked_at": "2026-10-31T13:21:28+08:00",
+  "model": "qwen2.5:3b",
+  "real_model_run": false,
+  "data_notice": "仅发送内置合成材料；不包含真实企业资料。",
+  "error": "无法连接本地模型服务：HTTPConnectionPool(host='127.0.0.1', port=11434): Max retries exceeded with url: /v1/models (Caused by NewConnectionError(\"HTTPConnection(host='127.0.0.1', port=11434): Failed to establish a new connection: [WinError 10013] 以一种访问权限不允许的方式做了一个访问套接字的尝试。\"))"
+}

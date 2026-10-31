@@ -40,10 +40,11 @@ def _verdict_option_index(verdict: str) -> int:
 
 
 def render_claim_review(store: ReviewStore, review: ReviewSession, claim: Claim) -> None:
-    with st.container(border=True):
+    label = VERDICT_LABELS.get(claim.verdict, claim.verdict)
+    with st.expander(f"{claim.claim_id} · {label}　{claim.text}", expanded=claim.claim_id == "CLM-001"):
         head, state = st.columns([4, 1])
         with head:
-            st.markdown(f"#### {claim.claim_id} · {claim.text}")
+            st.markdown("**核验意见**")
             st.markdown(
                 f"{badge(claim.verdict)} <span class='xray-status'>来源：{html.escape(claim.source_name)} · 提取方式：{html.escape(claim.extraction_method)}</span>",
                 unsafe_allow_html=True,

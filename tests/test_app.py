@@ -3,7 +3,7 @@ from streamlit.testing.v1 import AppTest
 
 def make_app(tmp_path, monkeypatch):
     monkeypatch.setenv("XRAY_DATA_DIR", str(tmp_path / "runtime"))
-    return AppTest.from_file("app.py", default_timeout=30).run()
+    return AppTest.from_file("xray_app.py", default_timeout=30).run()
 
 
 def test_app_initial_render_has_tabs_and_no_exception(tmp_path, monkeypatch):
@@ -40,3 +40,15 @@ def test_public_mode_discloses_cloud_processing_and_hides_local_model(tmp_path, 
     assert not app.exception
     assert any("公开演示网页" in warning.value for warning in app.warning)
     assert not any(button.label == "测试本地模型连接" for button in app.button)
+
+
+def test_public_sources_case_runs_without_upload(tmp_path, monkeypatch):
+    app = make_app(tmp_path, monkeypatch)
+    next(button for button in app.button if button.label == "运行公开资料案例").click()
+    app.run()
+    assert not app.exception
+    review = app.session_state["review"]
+    assert len(review.claims) == 1
+    assert review.is_synthetic is False
+    assert review.documents[1].metadata["scope"] == "general_guidance"
+    assert any("真实公开技术资料" in item.value for item in app.caption)

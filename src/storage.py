@@ -5,9 +5,11 @@ from __future__ import annotations
 import os
 from pathlib import Path
 import sqlite3
+import tempfile
 from typing import Any
 
 from .models import ReviewSession, dumps_json, now_iso
+from .constants import is_public_deployment
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -15,8 +17,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 def default_database_path() -> Path:
     configured = os.environ.get("XRAY_DATA_DIR", "").strip()
-    if os.environ.get("SPACE_ID") or os.environ.get("XRAY_DEPLOYMENT_MODE", "").lower() == "public":
-        runtime_dir = Path("/tmp/chuanbo-xray")
+    if configured:
+        runtime_dir = Path(configured)
+    elif is_public_deployment():
+        runtime_dir = Path(tempfile.gettempdir()) / "chuanbo-xray"
     else:
         runtime_dir = Path(configured) if configured else PROJECT_ROOT / "data" / "runtime"
         if not runtime_dir.is_absolute():
