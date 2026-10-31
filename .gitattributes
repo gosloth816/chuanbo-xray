@@ -1,0 +1,2 @@
+data/public_sources/*.txt text eol=lf
+data/market_sources/*.txt text eol=lf

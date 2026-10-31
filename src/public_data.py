@@ -62,7 +62,7 @@ def load_public_case(case_id="evidence_scope"):
     )
     promotion.metadata.update(data_origin="公开原文摘录与自编测试混合", claim_origins=case["origin"])
     if case.get("real_promotion"):
-        data = (MARKET_ROOT / "bayer_claim.txt").read_bytes()
+        data = (MARKET_ROOT / "bayer_claim.txt").read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
         if hashlib.sha256(data).hexdigest() != _market_meta["excerpt_sha256"]:
             raise ValueError("企业公开表述快照校验失败")
         promotion.metadata.update(_market_meta)
@@ -70,7 +70,9 @@ def load_public_case(case_id="evidence_scope"):
         promotion.warnings.append("仅核对所提供资料是否足以支持该表述，不判定企业声明真假；原文涉及组合方案，完整上下文见来源链接。")
     documents = [promotion]
     for source in sources():
-        data = (ROOT / source["file"]).read_bytes()
+        # 文本快照按LF换行校验，原始HTML指纹仍单独保留。
+        # Git归档或Windows检出可能仅改变换行，不能误报为资料篡改。
+        data = (ROOT / source["file"]).read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
         if hashlib.sha256(data).hexdigest() != source["text_sha256"]:
             raise ValueError(f"公开资料快照校验失败：{source['title']}")
         document = parse_document_bytes(name=source["title"] + ".txt", role="reference", data=data)

@@ -1,4 +1,5 @@
 import json
+import pytest
 
 from src.public_data import CASES, load_public_case, sources
 from src.pipeline import analyze_documents, add_manual_claim
@@ -35,3 +36,17 @@ def test_real_company_excerpt_is_not_labelled_as_synthetic():
     payload = json.loads(build_json_report(session))
     assert len(payload["source_provenance"]) == 3
     assert "组合方案" in payload["session"]["documents"][0]["metadata"]["context"]
+
+
+def test_snapshot_line_endings_survive_packaging_but_content_changes_fail(tmp_path, monkeypatch):
+    import src.public_data as module
+    for source in sources():
+        data = (module.ROOT / source["file"]).read_bytes().replace(b"\r\n", b"\n")
+        (tmp_path / source["file"]).write_bytes(data.replace(b"\n", b"\r\n"))
+    (tmp_path / "manifest.json").write_bytes((module.ROOT / "manifest.json").read_bytes())
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    assert len(load_public_case()) == 3
+    changed = tmp_path / sources()[0]["file"]
+    changed.write_bytes(changed.read_bytes().replace("小麦".encode(), "大豆".encode()))
+    with pytest.raises(ValueError, match="快照校验失败"):
+        load_public_case()
