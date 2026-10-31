@@ -121,3 +121,12 @@ def test_flash_uses_direct_answer_and_bounded_output(monkeypatch):
     assert model.call("测试", {})["ok"]
     assert captured["enable_thinking"] is False
     assert captured["max_tokens"] == 2048
+
+
+def test_real_generation_from_synthetic_input_remains_labelled_on_handoff():
+    from src.studio import export_markdown
+    bundle = new_bundle(FACTS, ITEMS, model="真实模型名称示例", audience="家庭", tone="自然", synthetic_input=True)
+    assert not bundle["synthetic"]
+    assert bundle["origin"] == "实际模型调用"
+    assert "合成测试商品" in export_markdown(bundle)
+    assert send_to_xray(bundle).is_synthetic

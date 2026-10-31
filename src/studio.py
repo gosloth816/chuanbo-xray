@@ -32,10 +32,11 @@ def audit_copy(text, facts):
     return warnings
 
 
-def new_bundle(facts, items, *, model, audience, tone, synthetic=False):
+def new_bundle(facts, items, *, model, audience, tone, synthetic=False, synthetic_input=False):
     return {"id": "QL-" + uuid4().hex[:10], "created_at": now_iso(), "facts": deepcopy(facts),
             "items": deepcopy(items), "model": model, "prompt_version": PROMPT_VERSION,
             "audience": audience, "tone": tone, "synthetic": synthetic,
+            "synthetic_input": bool(synthetic or synthetic_input),
             "origin": "预先编写的合成演示，未调用模型" if synthetic else "实际模型调用",
             "events": [{"at": now_iso(), "action": "created", "origin": "sample" if synthetic else "model"}]}
 
@@ -56,6 +57,7 @@ def persist(bundle):
 
 def export_markdown(bundle):
     lines = ["# 齐鲁卖点 · 创作文案", "", f"- 记录：{bundle['id']}", f"- 来源：{bundle['origin']}",
+             f"- 输入材料：{'合成测试商品' if bundle.get('synthetic_input', bundle['synthetic']) else '用户提供，未独立验证'}",
              f"- 模型：{bundle['model']}", f"- 提示词：{bundle['prompt_version']}",
              f"- 受众：{bundle['audience']}", "", "## 商家确认信息", ""]
     for fid, row in bundle["facts"].items():
@@ -71,13 +73,14 @@ def export_markdown(bundle):
 
 
 def send_to_xray(bundle):
+    synthetic_input = bundle.get("synthetic_input", bundle["synthetic"])
     promotion = "\n".join(item["title"] + "。\n" + item["body"] for item in bundle["items"])
     reference = "\n".join(row["field"] + "：" + row["value"] for row in bundle["facts"].values())
-    docs = [parse_document_bytes(name="待发布文案.txt", role="promotion", data=promotion.encode(), is_synthetic=bundle["synthetic"]),
-            parse_document_bytes(name="商家确认信息（未经独立验证）.txt", role="reference", data=reference.encode(), is_synthetic=bundle["synthetic"])]
+    docs = [parse_document_bytes(name="待发布文案.txt", role="promotion", data=promotion.encode(), is_synthetic=synthetic_input),
+            parse_document_bytes(name="商家确认信息（未经独立验证）.txt", role="reference", data=reference.encode(), is_synthetic=synthetic_input)]
     warnings = [warning for item in bundle["items"] for warning in audit_copy(item["title"] + item["body"], bundle["facts"])]
     session = ReviewSession.create(title="齐鲁卖点发布前审核", mode="offline_rules", model_name="", documents=docs,
-        claims=[], prompt_version=PROMPT_VERSION, is_synthetic=bundle["synthetic"],
+        claims=[], prompt_version=PROMPT_VERSION, is_synthetic=synthetic_input,
         warnings=["本次传播X光使用规则核对，未调用审核模型。依据仅为商家确认信息，不验证其真实性。"] + warnings,
         limitations=["来自齐鲁卖点的创作草稿，未经过发布批准。", "事实编号为模型自报，不代表完整语义支持。"])
     for text in re.split(r"[\n。！？；]+", promotion):

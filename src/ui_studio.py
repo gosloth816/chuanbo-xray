@@ -66,6 +66,8 @@ def render_studio():
             photo = st.file_uploader("产品图片（可选，最多10MB）", type=["jpg", "jpeg", "png", "webp"], key=f"product_image_{st.session_state.get('upload_nonce', 0)}")
             description = st.text_area("简要介绍", key="product_description", height=130,
                 placeholder="例如：产品名称、真实产地、规格、价格、包装特点。没有依据的信息可以不填。")
+            synthetic_input = st.checkbox("这是合成或测试商品资料", key="synthetic_input")
+            synthetic_input = synthetic_input or description == DESCRIPTION or "合成测试" in description or "合成设定" in description
             image = photo.getvalue() if photo else None
             sig = fingerprint(description, image)
             if sig != st.session_state.get("studio_signature"):
@@ -131,7 +133,8 @@ def render_studio():
             try:
                 with st.spinner("正在创作多渠道文案…"):
                     items = model.generate(st.session_state["confirmed_facts"], audience, channels, tone)
-                bundle = new_bundle(st.session_state["confirmed_facts"], items, model=model.name, audience=audience, tone=tone)
+                bundle = new_bundle(st.session_state["confirmed_facts"], items, model=model.name, audience=audience, tone=tone,
+                                    synthetic_input=synthetic_input)
                 bundle["input_fingerprint"] = sig
                 bundle["image_sha256"] = hashlib.sha256(image).hexdigest() if image else None
                 st.session_state["studio_bundle"] = bundle
@@ -150,6 +153,8 @@ def render_studio():
                 st.warning("合成演示：下面的文案预先编写，未调用模型，不对应真实商品。")
             else:
                 st.caption(f"模型：{bundle['model']} · 提示词：{bundle['prompt_version']} · {bundle['id']}")
+                if bundle.get("synthetic_input"):
+                    st.warning("当前为合成商品的真实模型测试，生成文案不代表真实商家或真实产品。")
             for index, item in enumerate(bundle["items"]):
                 with st.container(border=True):
                     st.markdown("### " + item["channel"])

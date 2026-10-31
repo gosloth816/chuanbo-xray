@@ -1,0 +1,51 @@
+{
+  "checked_at": "2026-10-31T09:28:11.409Z",
+  "url": "https://chuanbo-xray.streamlit.app",
+  "real_vision": true,
+  "real_generation": true,
+  "synthetic_input": true,
+  "extracted": {
+    "产品名称": "演示苹果",
+    "产地": "山东",
+    "规格": "5斤每箱",
+    "特点": "红色果皮",
+    "价格": "39元每箱",
+    "储存方式": "",
+    "认证": ""
+  },
+  "model": "qwen3.8-flash",
+  "items": [
+    {
+      "channel": "商品详情页",
+      "title": "演示苹果 5斤/箱",
+      "body": "产品名称为演示苹果，规格为5斤/箱，特点为红色果皮，适合家庭日常购买。",
+      "fact_ids": [
+        "F1",
+        "F3",
+        "F4"
+      ]
+    },
+    {
+      "channel": "朋友圈",
+      "title": "家里日常备一箱",
+      "body": "家里日常买一箱演示苹果，5斤/箱，果皮呈红色。",
+      "fact_ids": [
+        "F1",
+        "F3",
+        "F4"
+      ]
+    },
+    {
+      "channel": "短视频口播",
+      "title": "演示苹果介绍",
+      "body": "今天说的是演示苹果，一箱5斤，果皮是红色的，适合家里日常吃。",
+      "fact_ids": [
+        "F1",
+        "F3",
+        "F4"
+      ]
+    }
+  ],
+  "bundle_id": "QL-faa008e2f4",
+  "handoff": true
+}
