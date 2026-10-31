@@ -130,3 +130,58 @@ def test_real_generation_from_synthetic_input_remains_labelled_on_handoff():
     assert bundle["origin"] == "实际模型调用"
     assert "合成测试商品" in export_markdown(bundle)
     assert send_to_xray(bundle).is_synthetic
+
+
+def test_generation_brief_reaches_request_without_becoming_product_fact(monkeypatch):
+    captured = {}
+    class Response:
+        status_code = 200
+        def json(self):
+            return {"choices": [{"message": {"content": json.dumps({"items": ITEMS})}}]}
+    def post(*args, **kwargs):
+        captured.update(kwargs["json"])
+        return Response()
+    monkeypatch.setattr("requests.post", post)
+    model = StudioModel()
+    result = model.generate(FACTS, "家庭", ["朋友圈"], "自然", goal="介绍新品", length="精简短稿",
+                            focus_ids=["F2"], creative_direction="从下班场景切入，不使用健康承诺")
+    request = json.loads(captured["messages"][1]["content"][0]["text"])
+    assert request["confirmed_facts"] == FACTS
+    assert request["campaign_goal"] == "介绍新品"
+    assert request["focus_fact_ids"] == ["F2"]
+    assert set(request["requested_lengths"]) == {"朋友圈"}
+    assert request["creative_direction"] == "从下班场景切入，不使用健康承诺"
+    assert captured["max_tokens"] > 2048
+    assert result == ITEMS
+
+
+def test_studio_keeps_selected_brief_in_export_and_handoff(tmp_path, monkeypatch):
+    from src.studio import export_markdown
+    captured = {}
+    def generate(self, facts, audience, channels, tone, **brief):
+        captured.update(brief)
+        return [{**ITEMS[0], "channel": channel} for channel in channels]
+    monkeypatch.setattr(StudioModel, "generate", generate)
+    monkeypatch.setenv("XRAY_DATA_DIR", str(tmp_path))
+    for key in ("STUDIO_MODEL_BASE_URL", "STUDIO_MODEL_NAME", "STUDIO_MODEL_API_KEY", "XRAY_DEPLOYMENT_MODE"):
+        monkeypatch.delenv(key, raising=False)
+    app = AppTest.from_file("app.py", default_timeout=30).run()
+    next(b for b in app.button if b.label == "加载合成演示").click().run()
+    next(s for s in app.selectbox if s.label == "这次文案的目标").select("介绍新品").run()
+    next(s for s in app.selectbox if s.label == "文案篇幅").select("精简短稿").run()
+    next(t for t in app.text_area if t.label == "想要的创作方向（可选）").set_value("以家庭补货切入").run()
+    next(b for b in app.button if b.label == "生成多渠道文案").click().run()
+    assert not app.exception
+    bundle = app.session_state["studio_bundle"]
+    assert captured["goal"] == bundle["creative_brief"]["goal"] == "介绍新品"
+    assert bundle["creative_brief"]["creative_direction"] == "以家庭补货切入"
+    assert "精简短稿" in export_markdown(bundle)
+    assert json.loads(send_to_xray(bundle).notes)["creative_brief"] == bundle["creative_brief"]
+
+
+def test_stale_focus_cannot_trigger_model_request(monkeypatch):
+    def unexpected(*args, **kwargs):
+        pytest.fail("失效卖点不应发送模型请求")
+    monkeypatch.setattr("requests.post", unexpected)
+    with pytest.raises(StudioError, match="主推卖点"):
+        StudioModel().generate(FACTS, "家庭", ["朋友圈"], "自然", focus_ids=["F999"])

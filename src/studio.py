@@ -32,11 +32,12 @@ def audit_copy(text, facts):
     return warnings
 
 
-def new_bundle(facts, items, *, model, audience, tone, synthetic=False, synthetic_input=False):
+def new_bundle(facts, items, *, model, audience, tone, synthetic=False, synthetic_input=False, creative_brief=None):
     return {"id": "QL-" + uuid4().hex[:10], "created_at": now_iso(), "facts": deepcopy(facts),
             "items": deepcopy(items), "model": model, "prompt_version": PROMPT_VERSION,
             "audience": audience, "tone": tone, "synthetic": synthetic,
             "synthetic_input": bool(synthetic or synthetic_input),
+            "creative_brief": deepcopy(creative_brief or {}),
             "origin": "预先编写的合成演示，未调用模型" if synthetic else "实际模型调用",
             "events": [{"at": now_iso(), "action": "created", "origin": "sample" if synthetic else "model"}]}
 
@@ -59,7 +60,13 @@ def export_markdown(bundle):
     lines = ["# 齐鲁卖点 · 创作文案", "", f"- 记录：{bundle['id']}", f"- 来源：{bundle['origin']}",
              f"- 输入材料：{'合成测试商品' if bundle.get('synthetic_input', bundle['synthetic']) else '用户提供，未独立验证'}",
              f"- 模型：{bundle['model']}", f"- 提示词：{bundle['prompt_version']}",
-             f"- 受众：{bundle['audience']}", "", "## 商家确认信息", ""]
+             f"- 受众：{bundle['audience']}", f"- 表达风格：{bundle['tone']}"]
+    brief = bundle.get("creative_brief", {})
+    if brief:
+        lines += [f"- 创作目标：{brief.get('goal', '')}", f"- 篇幅：{brief.get('length', '')}",
+                  "- 主推事实：" + ", ".join(brief.get("focus_fact_ids", [])),
+                  f"- 创作方向（非事实依据）：{brief.get('creative_direction', '')}"]
+    lines += ["", "## 商家确认信息", ""]
     for fid, row in bundle["facts"].items():
         lines.append(f"- {fid} · {row['field']}：{row['value']}")
     for item in bundle["items"]:
@@ -88,5 +95,6 @@ def send_to_xray(bundle):
         if len(text) >= 4 and not any(c.text == text for c in session.claims):
             add_manual_claim(session=session, claim_text=text, reviewer="齐鲁卖点交接")
     session.notes = json.dumps({"studio_id": bundle["id"], "origin": bundle["origin"],
-                                 "generation_model": bundle["model"], "events": bundle["events"]}, ensure_ascii=False)
+                                 "generation_model": bundle["model"], "creative_brief": bundle.get("creative_brief", {}),
+                                 "events": bundle["events"]}, ensure_ascii=False)
     return session

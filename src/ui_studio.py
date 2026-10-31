@@ -8,7 +8,7 @@ from streamlit.errors import StreamlitSecretNotFoundError
 
 from .constants import is_public_deployment
 from .studio import fingerprint, new_bundle, persist, save_edit, export_markdown, audit_copy, send_to_xray
-from .studio_model import CHANNELS, FIELDS, StudioModel, StudioError
+from .studio_model import CHANNELS, FIELDS, GOALS, LENGTHS, StudioModel, StudioError
 from .storage import ReviewStore
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -124,7 +124,18 @@ def render_studio():
         audience = st.selectbox("目标受众", ["家庭日常购买", "年轻上班族", "节日送礼", "社区团购"])
         channels = st.multiselect("发布渠道", CHANNELS, default=CHANNELS)
         tone = st.selectbox("表达风格", ["自然清楚", "简短直接", "温暖生活化"])
-        st.caption("模型只使用已确认信息。不同渠道分别创作，不自动补充价格、认证或效果承诺。")
+        goal_col, length_col = st.columns(2)
+        with goal_col:
+            goal = st.selectbox("这次文案的目标", GOALS)
+        with length_col:
+            length = st.selectbox("文案篇幅", list(LENGTHS))
+        confirmed_for_brief = st.session_state.get("confirmed_facts") or {}
+        focus_ids = st.multiselect("重点讲哪些信息（可选）", list(confirmed_for_brief),
+            format_func=lambda fid: f"{confirmed_for_brief[fid]['field']}：{confirmed_for_brief[fid]['value']}")
+        creative_direction = st.text_area("想要的创作方向（可选）", max_chars=600, height=90,
+            placeholder="例如：从下班后给家里添水果的场景切入，口吻像熟悉的店主，结尾邀请咨询。")
+        st.caption("创作方向用于场景和表达。新增产品卖点请先回到产品信息页填写并确认。")
+        st.caption("完整成稿：详情页约220—360字，朋友圈约100—180字，口播约45—60秒；信息较少时会适当缩短。")
         if model and model.remote:
             generation_permission = st.checkbox("允许将已确认信息发送到模型服务生成文案", value=False)
         else:
@@ -132,9 +143,12 @@ def render_studio():
         if st.button("生成多渠道文案", type="primary", disabled=not current_valid or not channels or not model or not generation_permission):
             try:
                 with st.spinner("正在创作多渠道文案…"):
-                    items = model.generate(st.session_state["confirmed_facts"], audience, channels, tone)
+                    items = model.generate(st.session_state["confirmed_facts"], audience, channels, tone,
+                        goal=goal, length=length, focus_ids=focus_ids, creative_direction=creative_direction)
                 bundle = new_bundle(st.session_state["confirmed_facts"], items, model=model.name, audience=audience, tone=tone,
-                                    synthetic_input=synthetic_input)
+                                    synthetic_input=synthetic_input,
+                                    creative_brief={"goal": goal, "length": length, "focus_fact_ids": focus_ids,
+                                                    "creative_direction": creative_direction})
                 bundle["input_fingerprint"] = sig
                 bundle["image_sha256"] = hashlib.sha256(image).hexdigest() if image else None
                 st.session_state["studio_bundle"] = bundle
@@ -160,7 +174,7 @@ def render_studio():
                     st.markdown("### " + item["channel"])
                     with st.form(f"draft_{bundle['id']}_{index}"):
                         title = st.text_input("标题", value=item["title"], key=f"draft_title_{bundle['id']}_{index}")
-                        body = st.text_area("正文", value=item["body"], height=150, key=f"draft_body_{bundle['id']}_{index}")
+                        body = st.text_area("正文", value=item["body"], height=280, key=f"draft_body_{bundle['id']}_{index}")
                         if st.form_submit_button("保存修改"):
                             if not title.strip() or not body.strip():
                                 st.error("标题和正文不能为空。")

@@ -1,11 +1,10 @@
 {
-  "ran_at": "2026-10-31T17:17:45+08:00",
-  "command": ".venv\\Scripts\\python.exe -m pytest",
+  "ran_at": "2026-10-31",
+  "command": ".venv\\Scripts\\python.exe -m pytest -q --basetemp=.test-temp/pytest-copy-v11",
   "passed": true,
   "return_code": 0,
-  "passed_tests": 54,
+  "passed_tests": 57,
   "failed_tests": 0,
-  "elapsed_seconds": 8.7935,
-  "scope": "核心业务、文档解析、检索与引用校验、规则分类、本地模型地址限制、SQLite 留痕、报告导出和 Streamlit 交互测试",
-  "output_tail": "......................................................                   [100%]\n54 passed in 6.12s\n"
+  "scope": "核心业务、文档解析、检索与引用校验、规则分类、本地模型地址限制、SQLite 留痕、报告导出和 Streamlit 交互测试；创作要求与事实分离、创作要求导出和审核交接、失效主推事实阻止调用",
+  "output_tail": "57 passed [100%]"
 }

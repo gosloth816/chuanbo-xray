@@ -24,4 +24,4 @@
 Streamlit免费托管存在资源限制及休眠机制，不等于无限资源或永久可用保证。
 
 
-已验证当前接口适配qwen3.8-flash的直接作答模式：示例Secrets关闭思考，每次响应限制为2048 Token，减少演示等待与无关推理消耗。模型是否仍有免费额度，须以账户控制台为准。官方视觉文档：https://help.aliyun.cn/zh/model-studio/vision-model。真实云端模型推理仍待填入账号密钥后验证。
+已验证当前接口适配qwen3.8-flash的直接作答模式：示例Secrets关闭思考，图片信息提取响应上限2048 Token，文案创作上限4096 Token，减少演示等待与无关推理消耗。模型是否仍有免费额度，须以账户控制台为准。官方视觉文档：https://help.aliyun.cn/zh/model-studio/vision-model。2026年10月31日已完成云端真实模型全流程测试，输入为合成商品资料，记录见cloud_real_model_check.json。

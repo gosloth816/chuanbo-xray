@@ -11,6 +11,7 @@ if "workspace_next" in st.session_state:
 with st.sidebar:
     st.markdown("### 齐鲁卖点")
     workspace = st.radio("工作区", ["文案创作", "传播 X 光审核"], key="workspace")
+    st.caption("创作版 1.1 · 场景、卖点与分渠道成稿")
 if workspace == "传播 X 光审核":
     render_xray_workspace()
 else:
