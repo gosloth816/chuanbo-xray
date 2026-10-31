@@ -41,6 +41,7 @@ COPY_INSTRUCTION = """你是一位为普通农产品商家撰稿的中文商业�
 【输出】
 仅返回JSON：{"items":[{"channel":"指定渠道","title":"标题","body":"正文，分段用\\n","fact_ids":["F1"]}]}。
 每个指定渠道恰好一份。每份fact_ids列出实际使用的全部事实编号，至少一个，不能引用不存在的编号。正文不显示编号。
+title和body必须是非空的字符串，不能使用数组、对象或null。所有段落放进同一个body字符串，用换行分隔。
 """
 
 
@@ -154,8 +155,12 @@ class StudioModel:
         for item in items:
             if not isinstance(item, dict) or item.get("channel") not in channels or item["channel"] in seen:
                 raise StudioError("模型返回的渠道不匹配。")
-            if any(not isinstance(item.get(key), str) or not item[key].strip() or len(item[key]) > 6000 for key in ("title", "body")):
-                raise StudioError("文案为空或过长。")
+            for key, label in (("title", "标题"), ("body", "正文")):
+                value = item.get(key)
+                if not isinstance(value, str) or not value.strip():
+                    raise StudioError(f"模型没有返回“{item['channel']}”的有效{label}，请重新生成。")
+                if len(value) > 6000:
+                    raise StudioError(f"“{item['channel']}”的{label}超过6000字，请选择精简短稿重试。")
             ids = item.get("fact_ids")
             if not isinstance(ids, list) or not ids or any(not isinstance(i, str) or i not in facts for i in ids):
                 raise StudioError("文案引用了未确认的产品信息，已拒绝该结果。")
