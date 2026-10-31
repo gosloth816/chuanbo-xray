@@ -10,7 +10,7 @@ import requests
 
 from .local_llm import _extract_json_object, LocalLLMError
 
-PROMPT_VERSION = "qilu-studio-v1.1"
+PROMPT_VERSION = "qilu-studio-v1.1.1"
 CHANNELS = ["商品详情页", "朋友圈", "短视频口播"]
 FIELDS = ["产品名称", "产地", "规格", "特点", "价格", "储存方式", "认证"]
 GOALS = ["吸引咨询", "介绍新品", "促进选购", "建立品牌印象"]

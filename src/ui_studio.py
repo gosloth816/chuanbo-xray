@@ -8,7 +8,7 @@ from streamlit.errors import StreamlitSecretNotFoundError
 
 from .constants import is_public_deployment
 from .studio import fingerprint, new_bundle, persist, save_edit, export_markdown, audit_copy, send_to_xray
-from .studio_model import CHANNELS, FIELDS, GOALS, LENGTHS, StudioModel, StudioError
+from .studio_model import CHANNELS, FIELDS, GOALS, LENGTHS, PROMPT_VERSION, StudioModel, StudioError
 from .storage import ReviewStore
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -41,6 +41,7 @@ def _model_settings():
         return None
     with st.sidebar.expander("创作模型与数据去向"):
         st.write("模型：" + (model.name or "尚未配置"))
+        st.caption("创作规范：" + PROMPT_VERSION)
         if model.remote:
             st.caption("图片和介绍会发送到已配置的远程模型服务；调用可能产生服务费用。")
         else:
