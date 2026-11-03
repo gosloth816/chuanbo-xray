@@ -1,4 +1,6 @@
 """齐鲁卖点：信息确认、分渠道创作、编辑和送审。"""
+from html import escape
+import gzip
 import hashlib
 import json
 from pathlib import Path
@@ -53,15 +55,73 @@ def _model_settings():
     return model
 
 
+@st.cache_data
+def _origin_atlas():
+    with gzip.open(ROOT / "data/studio/origin_atlas.json.gz", "rt", encoding="utf-8") as file:
+        return json.load(file)
+
+
+def _match_origin(origin, atlases):
+    text = "".join(origin.split()).replace("中国", "", 1)
+    autonomous = {
+        "内蒙古自治区": "内蒙古", "广西壮族自治区": "广西",
+        "西藏自治区": "西藏", "宁夏回族自治区": "宁夏",
+        "新疆维吾尔自治区": "新疆",
+    }
+    for province, atlas in atlases.items():
+        short = autonomous.get(province, province.removesuffix("特别行政区").removesuffix("省").removesuffix("市"))
+        prefix = next((name for name in (province, short) if text.startswith(name)), None)
+        if prefix:
+            rest = text[len(prefix):].lstrip("，,、/·")
+            city = next((name for name in sorted(atlas["cities"], key=len, reverse=True)
+                         if rest.startswith(name.removesuffix("市"))), None)
+            return province, city
+    matches = [(province, city) for province, atlas in atlases.items() for city in atlas["cities"]
+               if text in (city, city.removesuffix("市"))]
+    return matches[0] if len(matches) == 1 else (None, None)
+
+
+def _render_origin(facts):
+    origin = next((row["value"] for row in facts.values() if row["field"] == "产地"), "")
+    if not origin:
+        return
+    st.markdown("#### 商品产地")
+    st.write(origin)
+    atlases = _origin_atlas()
+    province, city = _match_origin(origin, atlases)
+    if province:
+        atlas = atlases[province]
+        svg = atlas["svg"]
+        highlighted = escape(city or province, quote=True)
+        svg = svg.replace(f'class="city" data-region="{highlighted}"',
+                          f'class="city selected" data-region="{highlighted}"')
+        x, y = atlas["cities"].get(city, (125, 85))
+        label = escape(city.removesuffix("市") if city else province)
+        svg = svg.replace('<text id="atlas-city-label"></text>',
+                          f'<text x="{x}" y="{y}">{label}</text>')
+        st.markdown(
+            '<style>.studio-atlas svg{width:100%;background:#eff5f8;border-radius:8px}'
+            '.studio-atlas .context{fill:#e0e7eb;stroke:#fff;stroke-width:.6}'
+            '.studio-atlas .city{fill:#b9ccd9;stroke:#fff;stroke-width:.65}'
+            '.studio-atlas .selected{fill:#7097b1;stroke:#456c86}'
+            '.studio-atlas text{font-size:12px;text-anchor:middle;fill:#203d52;'
+            'paint-order:stroke;stroke:#f5f8fa;stroke-width:2}</style>'
+            f'<div class="studio-atlas">{svg}</div>', unsafe_allow_html=True,
+        )
+        st.caption("边界数据：阿里云 DataV GeoAtlas")
+        return
+    st.caption("请在产地填写省和市，例如浙江省杭州市。")
+
+
 def render_studio():
     model = _model_settings()
     st.markdown("<div class='page-heading'><h1>齐鲁卖点</h1><p>从产品信息，到可编辑的宣传文案。</p></div>", unsafe_allow_html=True)
     st.button("加载合成演示", on_click=_load_demo, help="加载预写演示内容，不调用或冒充模型。")
     if is_public_deployment():
         st.info("公开网页中的上传材料会发送至托管服务器处理，请仅使用获授权的材料。")
-    info, creative, drafts, check = st.tabs(["① 产品信息", "② 受众与渠道", "③ 文案工作台", "④ 发布前检查"])
+    info, drafts, creative = st.columns([1, 1.65, 1.1], gap="medium")
     with info:
-        left, right = st.columns([1, 1.1], gap="large")
+        left, right = st.container(), st.container()
         with left:
             st.markdown("### 介绍你的产品")
             photo = st.file_uploader("产品图片（可选，最多10MB）", type=["jpg", "jpeg", "png", "webp"], key=f"product_image_{st.session_state.get('upload_nonce', 0)}")
@@ -119,7 +179,8 @@ def render_studio():
                     st.session_state["confirmed_facts"] = current
                     st.rerun()
             if current_valid:
-                st.caption("已确认。下一步打开“② 受众与渠道”。")
+                st.caption("已确认。可在右栏设置表达方式。")
+        _render_origin(st.session_state.get("confirmed_facts") or {})
     with creative:
         st.markdown("### 这次，想对谁说？")
         audience = st.selectbox("目标受众", ["家庭日常购买", "年轻上班族", "节日送礼", "社区团购"])
@@ -154,7 +215,7 @@ def render_studio():
                 bundle["image_sha256"] = hashlib.sha256(image).hexdigest() if image else None
                 st.session_state["studio_bundle"] = bundle
                 persist(bundle)
-                st.success("真实模型生成已完成，请打开“③ 文案工作台”。")
+                st.success("真实模型生成已完成，可在中间查看文稿。")
             except StudioError as exc:
                 st.error(str(exc))
         if not current_valid:
@@ -170,7 +231,19 @@ def render_studio():
                 st.caption(f"模型：{bundle['model']} · 提示词：{bundle['prompt_version']} · {bundle['id']}")
                 if bundle.get("synthetic_input"):
                     st.warning("当前为合成商品的真实模型测试，生成文案不代表真实商家或真实产品。")
+            channel = st.selectbox("预览渠道", [item["channel"] for item in bundle["items"]])
             for index, item in enumerate(bundle["items"]):
+                if item["channel"] != channel:
+                    continue
+                st.markdown(
+                    '<div style="max-width:330px;margin:12px auto 20px;border:7px solid #202124;'
+                    'border-radius:32px;background:white;color:#1d1d1f;padding:20px;'
+                    'height:420px;overflow:auto;overflow-wrap:anywhere">'
+                    f'<p style="text-align:center;font-weight:600">{escape(channel)}</p>'
+                    f'<h4>{escape(item["title"])}</h4>'
+                    f'<p style="white-space:pre-wrap">{escape(item["body"])}</p></div>',
+                    unsafe_allow_html=True,
+                )
                 with st.container(border=True):
                     st.markdown("### " + item["channel"])
                     with st.form(f"draft_{bundle['id']}_{index}"):
@@ -182,14 +255,14 @@ def render_studio():
                             else:
                                 save_edit(bundle, index, title, body)
                                 persist(bundle)
-                                st.success("修改已保存并留痕。")
+                                st.rerun()
                     for warning in audit_copy(item["title"] + item["body"], bundle["facts"]):
                         st.warning(warning)
                     st.caption("依据编号：" + ", ".join(item["fact_ids"]) + "；编号由模型自报，仍需人工核对。")
             st.download_button("下载文案 Markdown", export_markdown(bundle), file_name="齐鲁卖点-创作草稿.md", mime="text/markdown")
             st.download_button("下载创作记录 JSON", json.dumps(bundle, ensure_ascii=False, indent=2), file_name="齐鲁卖点-创作记录.json", mime="application/json")
             st.caption("导出和送审使用已保存的版本。尚未点击保存的编辑不会进入报告。")
-    with check:
+    with creative:
         st.markdown("### 交给传播 X 光，再核对一遍")
         st.write("将保存后的文案与本次确认信息一起送审，逐条检查依据、修改结论并留下记录。")
         st.caption("商家确认信息不是独立证据。规则审核不等于事实认定或发布批准。")
