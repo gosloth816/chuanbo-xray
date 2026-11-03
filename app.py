@@ -1,23 +1,26 @@
-"""齐鲁卖点与传播X光一体化入口。"""
+"""齐鲁卖点与传播 X 光入口。"""
 import streamlit as st
-from src.ui_theme import inject_css
-from importlib import reload
-from src import studio_workspace
 
-if getattr(studio_workspace, "WORKSPACE_VERSION", None) != 2:
-    reload(studio_workspace)
+from src.studio_exact import render_exact_studio
+from src.ui_theme import inject_css
 from src.xray_workspace import render_xray_workspace
 
-st.set_page_config(page_title="齐鲁卖点｜创作与发布前审核", page_icon="✦", layout="wide", initial_sidebar_state="collapsed")
-inject_css()
-if "workspace_next" in st.session_state:
-    st.session_state["workspace"] = st.session_state.pop("workspace_next")
-with st.sidebar:
-    st.markdown("### 齐鲁卖点")
-    workspace = st.radio("工作区", ["文案创作", "传播 X 光审核"], key="workspace")
-    st.caption("创作版 1.3 · 商品产地与渠道预览")
-if workspace == "传播 X 光审核":
+st.set_page_config(page_title="齐鲁卖点｜创作与发布前审核", layout="wide")
+if st.session_state.pop("workspace_next", None) == "传播 X 光审核":
+    st.session_state["show_xray"] = True
+
+if st.session_state.get("show_xray"):
+    inject_css()
+    if st.button("返回创作室"):
+        st.session_state["show_xray"] = False
+        st.rerun()
     render_xray_workspace()
 else:
-    st.markdown("<div class='workspace-top'><span>齐鲁卖点 <span class='workspace-slash'>/</span> 创作与审核</span><span class='workspace-mode'>商家确认 · AI创作 · 人工发布</span></div>", unsafe_allow_html=True)
-    studio_workspace.render_studio()
+    st.markdown(
+        """<style>
+        [data-testid="stHeader"],[data-testid="stSidebar"],[data-testid="stToolbar"]{display:none}
+        [data-testid="stMainBlockContainer"]{padding:0;max-width:none}
+        iframe[title$="approved_studio"]{display:block}
+        </style>""", unsafe_allow_html=True,
+    )
+    render_exact_studio()
