@@ -29,12 +29,32 @@ def _atlas_svg(origin):
                        f'<text x="{x}" y="{y}">{label}</text>')
 
 
+EXACT_RELEASE = 2
+
+
+class _StudioWithSafeTitles(StudioModel):
+    def call(self, instruction, data, image=None, **options):
+        result = super().call(instruction, data, image, **options)
+        facts = data.get("confirmed_facts")
+        items = result.get("items")
+        if facts and isinstance(items, list):
+            product_name = next((row["value"] for row in facts.values()
+                                 if row["field"] == "产品名称"), "")
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                title = item.get("title")
+                if product_name and (not isinstance(title, str) or not title.strip()):
+                    item["title"] = product_name
+        return result
+
+
 def _model():
     try:
         settings = dict(st.secrets)
     except StreamlitSecretNotFoundError:
         settings = {}
-    return StudioModel(settings=settings, public=is_public_deployment())
+    return _StudioWithSafeTitles(settings=settings, public=is_public_deployment())
 
 
 def _run_action(event, result):

@@ -2,7 +2,11 @@
 import streamlit as st
 
 from src.review_desk import render_review_desk
-from src.studio_exact import render_exact_studio
+from importlib import reload
+from src import studio_exact
+
+if getattr(studio_exact, "EXACT_RELEASE", None) != 2:
+    reload(studio_exact)
 from src.ui_theme import inject_css
 from src.xray_workspace import render_xray_workspace
 
@@ -27,4 +31,4 @@ else:
     if st.session_state.get("show_xray"):
         render_review_desk()
     else:
-        render_exact_studio()
+        studio_exact.render_exact_studio()
