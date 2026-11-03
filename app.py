@@ -1,7 +1,11 @@
 """齐鲁卖点与传播X光一体化入口。"""
 import streamlit as st
 from src.ui_theme import inject_css
-from src.studio_workspace import render_studio
+from importlib import reload
+from src import studio_workspace
+
+if getattr(studio_workspace, "WORKSPACE_VERSION", None) != 2:
+    reload(studio_workspace)
 from src.xray_workspace import render_xray_workspace
 
 st.set_page_config(page_title="齐鲁卖点｜创作与发布前审核", page_icon="✦", layout="wide", initial_sidebar_state="collapsed")
@@ -11,9 +15,9 @@ if "workspace_next" in st.session_state:
 with st.sidebar:
     st.markdown("### 齐鲁卖点")
     workspace = st.radio("工作区", ["文案创作", "传播 X 光审核"], key="workspace")
-    st.caption("创作版 1.2 · 商品产地与渠道预览")
+    st.caption("创作版 1.3 · 商品产地与渠道预览")
 if workspace == "传播 X 光审核":
     render_xray_workspace()
 else:
     st.markdown("<div class='workspace-top'><span>齐鲁卖点 <span class='workspace-slash'>/</span> 创作与审核</span><span class='workspace-mode'>商家确认 · AI创作 · 人工发布</span></div>", unsafe_allow_html=True)
-    render_studio()
+    studio_workspace.render_studio()

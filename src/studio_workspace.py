@@ -113,17 +113,50 @@ def _render_origin(facts):
     st.caption("请在产地填写省和市，例如浙江省杭州市。")
 
 
+WORKSPACE_VERSION = 2
+
+
+def _phone(channel, title, body):
+    st.markdown(
+        '<div class="studio-phone"><div class="studio-phone-bar">'
+        f'{escape(channel)}</div><article><h4>{escape(title)}</h4>'
+        f'<p>{escape(body)}</p></article></div>', unsafe_allow_html=True,
+    )
+
+
 def render_studio():
     model = _model_settings()
-    st.markdown("<div class='page-heading'><h1>齐鲁卖点</h1><p>从产品信息，到可编辑的宣传文案。</p></div>", unsafe_allow_html=True)
+    st.markdown("""
+    <style>
+    .st-key-studio-layout {background:#f3f3f5;padding:1rem;border-radius:12px}
+    .st-key-studio-layout [data-testid="stColumn"] {background:#fafafc;padding:1rem;border-radius:8px;min-width:0}
+    .studio-phone {max-width:340px;margin:14px auto;border:7px solid #202124;
+      border-radius:34px;background:white;color:#1d1d1f;height:510px;overflow:auto}
+    .studio-phone-bar {text-align:center;font-weight:600;padding:15px;background:#f5f5f7;border-bottom:1px solid #ddd}
+    .studio-phone article {padding:20px;overflow-wrap:anywhere}
+    .studio-phone article p {white-space:pre-wrap;line-height:1.85}
+    </style>
+    """, unsafe_allow_html=True)
+    st.markdown("### 齐鲁卖点 · 创作室")
     st.button("加载合成演示", on_click=_load_demo, help="加载预写演示内容，不调用或冒充模型。")
-    if is_public_deployment():
-        st.info("公开网页中的上传材料会发送至托管服务器处理，请仅使用获授权的材料。")
-    info, drafts, creative = st.columns([1, 1.65, 1.1], gap="medium")
+    layout = st.container(key="studio-layout")
+    info, drafts, creative = layout.columns([1, 1.65, 1.1], gap="medium")
     with info:
-        left, right = st.container(), st.container()
+        st.markdown("### 本次商品")
+        facts = st.session_state.get("confirmed_facts") or {}
+        if facts:
+            if st.session_state.get("product_description") == DESCRIPTION:
+                st.image(str(ROOT / "data/studio/apple-studio.png"), caption="合成商品图")
+            for row in facts.values():
+                st.write(f'{row["field"]} · {row["value"]}')
+        else:
+            st.caption("录入商品并确认资料后，这里会显示商品摘要。")
+        _render_origin(facts)
+        left = st.expander("录入商品与识图")
+        right = st.expander("核对并确认商品事实", expanded=bool(st.session_state.get("recognition_message")))
         with left:
-            st.markdown("### 介绍你的产品")
+            if is_public_deployment():
+                st.caption("上传资料会发送至托管服务器处理，请使用获授权的材料。")
             photo = st.file_uploader("产品图片（可选，最多10MB）", type=["jpg", "jpeg", "png", "webp"], key=f"product_image_{st.session_state.get('upload_nonce', 0)}")
             description = st.text_area("简要介绍", key="product_description", height=130,
                 placeholder="例如：产品名称、真实产地、规格、价格、包装特点。没有依据的信息可以不填。")
@@ -146,11 +179,11 @@ def render_studio():
                         st.session_state["product_" + field] = next((r["value"] for r in rows if r["field"] == field), "")
                     st.session_state.pop("confirmed_facts", None)
                     st.session_state.pop("studio_bundle", None)
-                    st.session_state["recognition_message"] = "模型提出的信息已填入右侧，请逐项检查后保存。"
+                    st.session_state["recognition_message"] = "模型提出的信息已填入商品事实区，请逐项检查后保存。"
                     st.rerun()
                 except StudioError as exc:
                     st.error(str(exc))
-            st.caption("照片不能证明甜度、认证或健康功效。也可以跳过识别，直接手动填写右侧信息。")
+            st.caption("照片不能证明甜度、认证或健康功效。也可以跳过识别，直接手动填写商品事实。")
             if photo:
                 st.image(image, caption="本次上传图片", width="stretch")
             elif description == DESCRIPTION:
@@ -180,9 +213,8 @@ def render_studio():
                     st.rerun()
             if current_valid:
                 st.caption("已确认。可在右栏设置表达方式。")
-        _render_origin(st.session_state.get("confirmed_facts") or {})
     with creative:
-        st.markdown("### 这次，想对谁说？")
+        st.markdown("### 表达设定")
         audience = st.selectbox("目标受众", ["家庭日常购买", "年轻上班族", "节日送礼", "社区团购"])
         channels = st.multiselect("发布渠道", CHANNELS, default=CHANNELS)
         tone = st.selectbox("表达风格", ["自然清楚", "简短直接", "温暖生活化"])
@@ -223,7 +255,7 @@ def render_studio():
     bundle = st.session_state.get("studio_bundle")
     with drafts:
         if not bundle:
-            st.info("尚无文案。可以生成文案，或加载明确标注的合成演示体验编辑流程。")
+            _phone("渠道预览", "你的文稿会显示在这里", "请先在左侧录入并确认商品，再从右侧生成文案。也可以点击上方的加载合成演示。")
         else:
             if bundle["synthetic"]:
                 st.warning("合成演示：下面的文案预先编写，未调用模型，不对应真实商品。")
@@ -235,16 +267,8 @@ def render_studio():
             for index, item in enumerate(bundle["items"]):
                 if item["channel"] != channel:
                     continue
-                st.markdown(
-                    '<div style="max-width:330px;margin:12px auto 20px;border:7px solid #202124;'
-                    'border-radius:32px;background:white;color:#1d1d1f;padding:20px;'
-                    'height:420px;overflow:auto;overflow-wrap:anywhere">'
-                    f'<p style="text-align:center;font-weight:600">{escape(channel)}</p>'
-                    f'<h4>{escape(item["title"])}</h4>'
-                    f'<p style="white-space:pre-wrap">{escape(item["body"])}</p></div>',
-                    unsafe_allow_html=True,
-                )
-                with st.container(border=True):
+                _phone(channel, item["title"], item["body"])
+                with st.expander("编辑当前文稿"):
                     st.markdown("### " + item["channel"])
                     with st.form(f"draft_{bundle['id']}_{index}"):
                         title = st.text_input("标题", value=item["title"], key=f"draft_title_{bundle['id']}_{index}")
