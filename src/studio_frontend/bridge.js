@@ -90,7 +90,11 @@ function restoreProduct(product) {
   productSource.querySelector(".notice").textContent = product.intro || "商品资料已确认。";
   const image = productSource.querySelector("img");
   image.hidden = !product.photo;
-  if (product.photo) image.src = product.photo;
+  productPhotoUrl = product.photo || undefined;
+  if (product.photo) {
+    image.src = product.photo;
+    image.alt = product.f0 + "的上传图片";
+  }
   document.getElementById("origin-name").textContent = product.f1 || "未填写";
   document.querySelector(".b-toolbar h1").textContent = product.f0;
 }

@@ -29,7 +29,7 @@ def _atlas_svg(origin):
                        f'<text x="{x}" y="{y}">{label}</text>')
 
 
-EXACT_RELEASE = 2
+EXACT_RELEASE = 3
 
 
 class _StudioWithSafeTitles(StudioModel):
@@ -91,7 +91,8 @@ def _run_action(event, result):
             )):
                 raise StudioError("商品图片格式或大小不符合要求。")
             previous = st.session_state.get("exact_product", {})
-            st.session_state["exact_product"] = {**product, "photo": photo or previous.get("photo", "")}
+            previous_photo = previous.get("photo", "") if previous.get("f0") == facts["F1"]["value"] else ""
+            st.session_state["exact_product"] = {**product, "photo": photo or previous_photo}
             st.session_state["exact_facts"] = facts
             st.session_state.pop("exact_bundle", None)
             result["atlas"] = _atlas_svg(facts.get("F2", {}).get("value", ""))

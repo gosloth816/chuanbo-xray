@@ -5,7 +5,7 @@ from src.review_desk import render_review_desk
 from importlib import reload
 from src import studio_exact
 
-if getattr(studio_exact, "EXACT_RELEASE", None) != 2:
+if getattr(studio_exact, "EXACT_RELEASE", None) != 3:
     reload(studio_exact)
 from src.ui_theme import inject_css
 from src.xray_workspace import render_xray_workspace

@@ -85,7 +85,13 @@ function currentDraft(){return {title:document.getElementById('b-title').innerTe
 function stashDraft(){draftEdits[bChannel]=currentDraft()}
 function updateCount(){const count=currentDraft().body.replace(/\s/g,'').length;document.getElementById('b-count').textContent='正文 '+count+' 字 · 手写示例，可编辑';document.getElementById('preview-count').textContent=count+' 字'}
 function textElement(tag,text,cls){const el=document.createElement(tag);el.textContent=text;if(cls)el.className=cls;return el}
-function productImage(){const img=document.createElement('img');img.src='apples-studio.png';img.width=1536;img.height=1024;img.alt='合成苹果商品图，非实拍';return img}
+function appendProductImage(target){
+ const source=document.querySelector('.b-source img');
+ if(!source || source.hidden || !source.getAttribute('src'))return;
+ const image=source.cloneNode();
+ image.removeAttribute('fetchpriority');
+ target.append(image);
+}
 function syncPhone(){
  const {title,body}=currentDraft(),box=document.getElementById('phone-content');
  const scroll=box.scrollTop;box.replaceChildren();box.className='phone-scroll';
@@ -94,10 +100,10 @@ function syncPhone(){
  if(!title.trim()&&!body.trim()){box.append(textElement('p','在中间编辑区输入标题和正文，手机里会同步显示。','notice'));updateCount();return}
  if(bChannel==='moments'){
   const row=document.createElement('div');row.className='phone-user';row.append(textElement('div','齐鲁','phone-user-avatar'));
-  const content=document.createElement('div');content.append(textElement('strong','齐鲁小铺（虚构店名）'),textElement('p',[title,body].filter(Boolean).join('\n\n')),productImage());
+  const content=document.createElement('div');content.append(textElement('strong','齐鲁小铺（虚构店名）'),textElement('p',[title,body].filter(Boolean).join('\n\n')));appendProductImage(content);
   const time=textElement('div','刚刚 · 排版示意','phone-time');content.append(time);row.append(content);box.append(row);
  }else if(bChannel==='detail'){
-  box.classList.add('phone-detail');box.append(productImage());const content=document.createElement('div');content.className='phone-detail-copy';
+  box.classList.add('phone-detail');appendProductImage(box);const content=document.createElement('div');content.className='phone-detail-copy';
   content.append(textElement('h3',title),textElement('p',body));const button=textElement('button','咨询商品信息','primary');button.onclick=()=>showToast('这里只展示咨询入口，不会联系商家。');content.append(button);box.append(content);
  }else{
   box.classList.add('phone-script');box.append(textElement('p','口播提词示意 · 不播放音频或视频','script-note'),textElement('h3',title));
@@ -186,6 +192,7 @@ productForm.onsubmit=event=>{
  const data=new FormData(productForm);
  const name=data.get('f0').trim();
  if(!name){productForm.elements.f0.focus();return}
+ const sameProduct=productSource.querySelector('h3').textContent===name;
  productSource.querySelector('h3').textContent=name;
  productSource.querySelectorAll('dd').forEach((field,index)=>field.textContent=data.get('f'+(index+1)).trim()||'未填写');
  productSource.querySelector('.notice').textContent=data.get('intro').trim()||'商品信息由你填写。';
@@ -197,7 +204,7 @@ productForm.onsubmit=event=>{
   image.src=productPhotoUrl;
   image.alt=name+'的上传图片';
   image.hidden=false;
- }else if(!productPhotoUrl){image.hidden=true}
+ }else if(!sameProduct || !productPhotoUrl){image.hidden=true;productPhotoUrl=undefined}
  const origin=data.get('f1').trim();
  document.getElementById('origin-name').textContent=origin||'未填写';
  updateOriginMap(origin);
