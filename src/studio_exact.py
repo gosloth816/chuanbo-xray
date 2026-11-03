@@ -123,7 +123,7 @@ def render_exact_studio():
     if event["id"] == st.session_state.get("exact_last_event"):
         return
     st.session_state["exact_last_event"] = event["id"]
-    result = {"id": event["id"]}
+    result = {"id": event["id"], "action": event.get("action")}
     try:
         _run_action(event, result)
     except StudioError as error:

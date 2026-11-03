@@ -47,10 +47,28 @@ document.getElementById("extract-product").onclick = () => {
   if (!document.getElementById("allow-extract").checked) return showToast("请先确认允许发送图片和介绍。");
   sendProduct("extract");
 };
-document.getElementById("generate-copy").onclick = () => {
-  if (!document.getElementById("allow-generate").checked) return showToast("请先确认允许发送商品资料。");
+const generateButton = document.getElementById("generate-copy");
+const generationStatus = document.createElement("p");
+generationStatus.className = "notice";
+generationStatus.setAttribute("role", "status");
+generateButton.after(generationStatus);
+let generationTimer;
+function finishGeneration(message) {
+  clearTimeout(generationTimer);
+  generateButton.disabled = false;
+  generateButton.textContent = "生成文案";
+  generationStatus.textContent = message;
+}
+generateButton.onclick = () => {
+  if (!document.getElementById("allow-generate").checked) {
+    generationStatus.textContent = "请先确认允许发送商品资料。";
+    return;
+  }
+  generateButton.disabled = true;
+  generateButton.textContent = "生成中…";
+  generationStatus.textContent = "已提交生成请求，请稍候。";
+  generationTimer = setTimeout(() => finishGeneration("等待响应超时。请检查连接后再试。"), 125000);
   sendAction("generate", {audience: document.getElementById("b-audience").value, tone: document.getElementById("b-tone").value});
-  showToast("正在生成文案…");
 };
 function currentEdits() {
   stashDraft();
@@ -101,7 +119,8 @@ window.addEventListener("message", event => {
   }
   if (!state || state.id === applied) return;
   applied = state.id;
-  if (state.message) showToast(state.message);
+  if (state.action === "generate") finishGeneration(state.message);
+  else if (state.message) showToast(state.message);
   if (state.extracted) {
     for (const [key, value] of Object.entries(state.extracted)) form.elements[key].value = value;
   }
