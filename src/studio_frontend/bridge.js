@@ -80,7 +80,8 @@ window.savePreview = () => sendAction("save", {edits: currentEdits()});
 let applied = "";
 let hydrated = false;
 function leaveDemo() {
-  document.getElementById("sample-disclaimer").hidden = true;
+  document.body.classList.add("merchant-product");
+  document.querySelectorAll("[data-demo-only], #sample-disclaimer").forEach(node => node.hidden = true);
   const direction = document.getElementById("creative-direction");
   if (direction.value === direction.defaultValue) direction.value = "";
 }
