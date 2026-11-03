@@ -68,7 +68,8 @@ generateButton.onclick = () => {
   generateButton.textContent = "生成中…";
   generationStatus.textContent = "已提交生成请求，请稍候。";
   generationTimer = setTimeout(() => finishGeneration("等待响应超时。请检查连接后再试。"), 125000);
-  sendAction("generate", {audience: document.getElementById("b-audience").value, tone: document.getElementById("b-tone").value, direction: document.getElementById("creative-direction").value.trim()});
+  sendAction("generate", {audience: document.getElementById("b-audience").value, tone: document.getElementById("b-tone").value, direction: document.getElementById("creative-direction").value.trim(),
+    focus: [...document.querySelectorAll(".inspector-facts input:checked")].map(input => input.value)});
 };
 function currentEdits() {
   stashDraft();
@@ -85,8 +86,24 @@ function leaveDemo() {
   const direction = document.getElementById("creative-direction");
   if (direction.value === direction.defaultValue) direction.value = "";
 }
+function renderFocus(product) {
+  const group = document.querySelector(".inspector-facts");
+  group.replaceChildren();
+  for (const [index, field] of [[1, "产地"], [2, "规格"], [3, "价格"], [4, "特点"]]) {
+    const value = product?.["f" + index];
+    if (!value) continue;
+    const label = document.createElement("label");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.value = "F" + (index + 1);
+    label.append(checkbox, document.createTextNode(field + "：" + value));
+    group.append(label);
+  }
+  if (!group.children.length) group.textContent = "补充商品事实后可选择主推信息。";
+}
 function restoreProduct(product) {
   leaveDemo();
+  renderFocus(product);
   for (const key of ["f0", "f1", "f2", "f3", "f4", "intro"]) {
     form.elements[key].value = product[key] || "";
   }
@@ -150,7 +167,7 @@ window.addEventListener("message", event => {
     document.getElementById("b-title").textContent = "";
     document.getElementById("b-copy").textContent = "";
     document.querySelector(".b-toolbar h1").textContent = state.productName;
-    document.querySelector(".b-inspector .inspector-facts").replaceChildren();
+    renderFocus(product);
     document.querySelector(".b-source .notice").textContent = state.intro || "商品资料已确认。";
     setBChannel(bChannel);
   }

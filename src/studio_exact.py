@@ -29,7 +29,7 @@ def _atlas_svg(origin):
                        f'<text x="{x}" y="{y}">{label}</text>')
 
 
-EXACT_RELEASE = 4
+EXACT_RELEASE = 5
 
 
 class _StudioWithSafeTitles(StudioModel):
@@ -108,9 +108,13 @@ def _run_action(event, result):
         audience = event.get("audience", "家庭日常购买")[:80]
         tone = event.get("tone", "自然清楚")[:80]
         direction = str(event.get("direction", "")).strip()[:600]
-        items = model.generate(facts, audience, CHANNELS, tone, creative_direction=direction)
+        requested_focus = event.get("focus", [])
+        focus = [fid for fid in ("F2", "F3", "F4", "F5")
+                 if isinstance(requested_focus, list) and fid in requested_focus and fid in facts]
+        items = model.generate(facts, audience, CHANNELS, tone,
+                               creative_direction=direction, focus_ids=focus)
         bundle = new_bundle(facts, items, model=model.name, audience=audience, tone=tone,
-                            creative_brief={"creative_direction": direction})
+                            creative_brief={"creative_direction": direction, "focus_fact_ids": focus})
         persist(bundle)
         st.session_state["exact_bundle"] = bundle
         result.update(items=items, message="文案已生成。")
