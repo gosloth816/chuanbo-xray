@@ -68,7 +68,7 @@ generateButton.onclick = () => {
   generateButton.textContent = "生成中…";
   generationStatus.textContent = "已提交生成请求，请稍候。";
   generationTimer = setTimeout(() => finishGeneration("等待响应超时。请检查连接后再试。"), 125000);
-  sendAction("generate", {audience: document.getElementById("b-audience").value, tone: document.getElementById("b-tone").value});
+  sendAction("generate", {audience: document.getElementById("b-audience").value, tone: document.getElementById("b-tone").value, direction: document.getElementById("creative-direction").value.trim()});
 };
 function currentEdits() {
   stashDraft();
@@ -79,7 +79,13 @@ document.getElementById("review-copy").onclick = () => sendAction("review", {edi
 window.savePreview = () => sendAction("save", {edits: currentEdits()});
 let applied = "";
 let hydrated = false;
+function leaveDemo() {
+  document.getElementById("sample-disclaimer").hidden = true;
+  const direction = document.getElementById("creative-direction");
+  if (direction.value === direction.defaultValue) direction.value = "";
+}
 function restoreProduct(product) {
+  leaveDemo();
   for (const key of ["f0", "f1", "f2", "f3", "f4", "intro"]) {
     form.elements[key].value = product[key] || "";
   }
@@ -134,6 +140,7 @@ window.addEventListener("message", event => {
     atlas.hidden = !state.atlas;
   }
   if (state.resetDraft) {
+    leaveDemo();
     for (const key of Object.keys(samples)) {
       samples[key].title = "";
       samples[key].body = "";
