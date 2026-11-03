@@ -1,7 +1,7 @@
 """齐鲁卖点与传播X光一体化入口。"""
 import streamlit as st
 from src.ui_theme import inject_css
-from src.ui_studio import render_studio
+from src.studio_workspace import render_studio
 from src.xray_workspace import render_xray_workspace
 
 st.set_page_config(page_title="齐鲁卖点｜创作与发布前审核", page_icon="✦", layout="wide", initial_sidebar_state="collapsed")
