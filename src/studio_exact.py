@@ -34,7 +34,7 @@ def _atlas_svg(origin):
                        f'<text x="{x}" y="{y}">{label}</text>')
 
 
-EXACT_RELEASE = 9
+EXACT_RELEASE = 10
 
 
 class _StudioWithSafeTitles(StudioModel):
@@ -224,7 +224,7 @@ def _run_action(event, result):
 
 
 def render_exact_studio():
-    component = declare_component("approved_studio", path=Path(__file__).with_name("studio_frontend"))
+    component = declare_component("approved_studio_v10", path=Path(__file__).with_name("studio_frontend"))
     state = st.session_state.get("exact_result") or {}
     product = st.session_state.get("exact_product")
     bundle = st.session_state.get("exact_bundle")
