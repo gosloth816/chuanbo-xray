@@ -104,7 +104,7 @@ class StudioModel:
         if self.thinking is not None:
             payload["enable_thinking"] = self.thinking
         try:
-            response = requests.post(self.base + "/chat/completions", headers=headers, timeout=(8, 60),
+            response = requests.post(self.base + "/chat/completions", headers=headers, timeout=(10, 100),
                 allow_redirects=False, json=payload)
             if response.status_code != 200:
                 raise StudioError(f"模型服务返回状态 {response.status_code}，请检查模型配置或额度。")
@@ -112,8 +112,6 @@ class StudioModel:
             if not isinstance(raw, str):
                 raise StudioError("模型返回的内容无法识别。")
             return _extract_json_object(raw)
-        except requests.Timeout as exc:
-            raise StudioError("模型响应超时，请稍后重新生成。商品资料已保留。") from exc
         except requests.RequestException as exc:
             raise StudioError("未能连接模型服务，请先配置并启动服务；此次没有生成AI结果。") from exc
         except (KeyError, IndexError, TypeError, ValueError, LocalLLMError) as exc:

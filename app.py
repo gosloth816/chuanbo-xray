@@ -5,7 +5,7 @@ from src.review_desk import render_review_desk
 from importlib import reload
 from src import studio_exact
 
-if getattr(studio_exact, "EXACT_RELEASE", None) != 11:
+if getattr(studio_exact, "EXACT_RELEASE", None) != 5:
     reload(studio_exact)
 from src.ui_theme import inject_css
 from src.xray_workspace import render_xray_workspace
@@ -25,7 +25,7 @@ else:
         """<style>
         [data-testid="stHeader"],[data-testid="stSidebar"],[data-testid="stToolbar"]{display:none}
         [data-testid="stMainBlockContainer"]{padding:0;max-width:none}
-        iframe[title$="approved_studio_v11"]{display:block}
+        iframe[title$="approved_studio"]{display:block}
         </style>""", unsafe_allow_html=True,
     )
     if st.session_state.get("show_xray"):
