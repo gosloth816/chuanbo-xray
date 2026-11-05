@@ -147,6 +147,7 @@ window.addEventListener("message", event => {
   }
   if (!state || state.id === applied) return;
   applied = state.id;
+
   if (state.action === "generate") finishGeneration(state.message);
   else if (state.message) showToast(state.message);
   if (state.extracted) {
@@ -158,7 +159,7 @@ window.addEventListener("message", event => {
     atlas.hidden = !state.atlas;
   }
   if (state.resetDraft) {
-    leaveDemo();
+    if (product) restoreProduct(product);
     for (const key of Object.keys(samples)) {
       samples[key].title = "";
       samples[key].body = "";
@@ -185,6 +186,14 @@ window.addEventListener("message", event => {
   }
 });
 streamlitMessage("streamlit:componentReady", {apiVersion: 1});
-const size = () => streamlitMessage("streamlit:setFrameHeight", {height: Math.max(940, document.documentElement.scrollHeight)});
+let frameHeight = 0;
+const size = () => {
+  const height = document.body.classList.contains("works-mode")
+    ? Math.max(820, document.getElementById("works-page").offsetHeight + 140)
+    : Math.max(940, document.body.scrollHeight);
+  if (height === frameHeight) return;
+  frameHeight = height;
+  streamlitMessage("streamlit:setFrameHeight", {height});
+};
 new ResizeObserver(size).observe(document.body);
 size();
