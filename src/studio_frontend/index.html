@@ -416,7 +416,11 @@ window.addEventListener("message", event => {
   if (!state || state.id === applied) return;
   applied = state.id;
 
-  if (state.action === "generate") finishGeneration(state.message);
+  if (state.action === "generate" && state.pending) {
+    generateButton.disabled = true;
+    generateButton.textContent = "生成中…";
+    generationStatus.textContent = "正在生成三个渠道的文案，你可以继续浏览页面。";
+  } else if (state.action === "generate") finishGeneration(state.message);
   else if (state.message) showToast(state.message);
   if (state.extracted) {
     for (const [key, value] of Object.entries(state.extracted)) form.elements[key].value = value;

@@ -4,6 +4,8 @@ from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 import secrets
 import sqlite3
+import logging
+from concurrent.futures import ThreadPoolExecutor
 from html import escape
 from pathlib import Path
 
@@ -34,7 +36,36 @@ def _atlas_svg(origin):
                        f'<text x="{x}" y="{y}">{label}</text>')
 
 
-EXACT_RELEASE = 10
+EXACT_RELEASE = 11
+
+
+@st.cache_resource
+def _generation_pool():
+    return ThreadPoolExecutor(max_workers=4, thread_name_prefix="studio-copy")
+
+
+@st.fragment(run_every=1)
+def _check_generation():
+    job = st.session_state.get("exact_generation")
+    if not job or not job["future"].done():
+        return
+    st.session_state.pop("exact_generation")
+    if job["facts"] is not st.session_state.get("exact_facts"):
+        st.rerun()
+    result = {"action": "generate", "id": job["id"]}
+    try:
+        items = job["future"].result()
+        bundle = new_bundle(job["facts"], items, model=job["model"], audience=job["audience"],
+                            tone=job["tone"], creative_brief=job["brief"])
+        st.session_state["exact_bundle"] = bundle
+        result.update(items=items, message="文案已生成。")
+    except StudioError as error:
+        result["message"] = str(error)
+    except Exception as error:
+        logging.getLogger(__name__).error("Studio generation failed: %s", type(error).__name__)
+        result["message"] = "生成服务遇到异常，请重试。商品资料已保留。"
+    st.session_state["exact_result"] = result
+    st.rerun()
 
 
 class _StudioWithSafeTitles(StudioModel):
@@ -188,20 +219,26 @@ def _run_action(event, result):
     if not facts:
         raise StudioError("请先录入并保存商品。")
     if action == "generate":
+        if st.session_state.get("exact_generation"):
+            raise StudioError("上一条生成请求还在处理，请稍候。")
         model = _model()
+        if model.block_reason:
+            raise StudioError(model.block_reason)
         audience = event.get("audience", "家庭日常购买")[:80]
         tone = event.get("tone", "自然清楚")[:80]
         direction = str(event.get("direction", "")).strip()[:600]
         requested_focus = event.get("focus", [])
         focus = [fid for fid in ("F2", "F3", "F4", "F5")
                  if isinstance(requested_focus, list) and fid in requested_focus and fid in facts]
-        items = model.generate(facts, audience, CHANNELS, tone,
-                               creative_direction=direction, focus_ids=focus)
-        bundle = new_bundle(facts, items, model=model.name, audience=audience, tone=tone,
-                            creative_brief={"creative_direction": direction, "focus_fact_ids": focus})
-        persist(bundle)
-        st.session_state["exact_bundle"] = bundle
-        result.update(items=items, message="文案已生成。")
+        future = _generation_pool().submit(model.generate, facts, audience, CHANNELS, tone,
+                                           creative_direction=direction, focus_ids=focus)
+        st.session_state["exact_generation"] = {
+            "id": event["id"], "future": future, "facts": facts, "model": model.name,
+            "audience": audience, "tone": tone,
+            "brief": {"creative_direction": direction, "focus_fact_ids": focus},
+        }
+        result["id"] = event["id"] + "-queued"
+        result["pending"] = True
     elif action in {"save", "review"}:
         bundle = st.session_state.get("exact_bundle")
         if not bundle:
@@ -224,7 +261,7 @@ def _run_action(event, result):
 
 
 def render_exact_studio():
-    component = declare_component("approved_studio_v10", path=Path(__file__).with_name("studio_frontend"))
+    component = declare_component("approved_studio_v11", path=Path(__file__).with_name("studio_frontend"))
     state = st.session_state.get("exact_result") or {}
     product = st.session_state.get("exact_product")
     bundle = st.session_state.get("exact_bundle")
@@ -237,6 +274,8 @@ def render_exact_studio():
                       items=bundle["items"] if bundle else None,
                       atlas=_atlas_svg(product.get("f1", "")) if product else None,
                       key="approved-studio", default=None)
+    if st.session_state.get("exact_generation"):
+        _check_generation()
     if not isinstance(event, dict) or not event.get("id"):
         return
     if event["id"] == st.session_state.get("exact_last_event"):
