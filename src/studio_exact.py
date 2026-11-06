@@ -62,7 +62,7 @@ def _run_action(event, result):
     if action == "open_review":
         st.session_state["workspace_next"] = "传播 X 光审核"
         return
-    if action in {"product", "extract"}:
+    if action in {"product", "restore_product", "extract"}:
         product = event["product"]
         if action == "extract":
             photo = event.get("photo", "")
@@ -90,14 +90,34 @@ def _run_action(event, result):
                 ("data:image/jpeg;base64,", "data:image/png;base64,", "data:image/webp;base64,")
             )):
                 raise StudioError("商品图片格式或大小不符合要求。")
+            history_id = event.get("history_id", "")
             previous = st.session_state.get("exact_product", {})
-            previous_photo = previous.get("photo", "") if previous.get("f0") == facts["F1"]["value"] else ""
-            st.session_state["exact_product"] = {**product, "photo": photo or previous_photo}
+            same_product = (previous.get("history_id") == history_id if history_id
+                            else previous.get("f0") == facts["F1"]["value"])
+            previous_photo = previous.get("photo", "") if same_product else ""
+            restored = event.get("draft") if action == "restore_product" else None
+            bundle = None
+            if restored:
+                items = restored["items"]
+                if {item["channel"] for item in items} != set(CHANNELS) or len(items) != len(CHANNELS):
+                    raise StudioError("这份历史文案格式有误，请重新录入商品。")
+                clean = [{"channel": item["channel"], "title": item["title"][:6000],
+                          "body": item["body"][:6000],
+                          "fact_ids": [key for key in item["fact_ids"] if key in facts]} for item in items]
+                bundle = new_bundle(facts, clean, model=restored["model"][:120],
+                                    audience=restored["audience"][:80], tone=restored["tone"][:80],
+                                    creative_brief=restored.get("creative_brief", {}))
+                bundle["origin"] = "从当前浏览器恢复的历史文稿"
+            st.session_state["exact_product"] = {**product, "photo": photo or previous_photo,
+                                                 "history_id": history_id}
             st.session_state["exact_facts"] = facts
             st.session_state.pop("exact_bundle", None)
             result["atlas"] = _atlas_svg(facts.get("F2", {}).get("value", ""))
             result.update(resetDraft=True, productName=facts["F1"]["value"],
                           intro=product.get("intro", "")[:600], message="商品资料已确认。")
+            if bundle:
+                st.session_state["exact_bundle"] = bundle
+                result.update(items=bundle["items"], message="已打开历史商品和文案。")
         return
 
     facts = st.session_state.get("exact_facts")
@@ -129,6 +149,7 @@ def _run_action(event, result):
                 save_edit(bundle, index, edit["title"][:6000], edit["body"][:6000])
         persist(bundle)
         result["message"] = "文稿已保存。"
+        result["saved"] = action == "save"
         if action == "review":
             session = send_to_xray(bundle)
             ReviewStore().save_review(session, action="studio_handoff", details={"studio_id": bundle["id"]})
@@ -143,6 +164,7 @@ def render_exact_studio():
     bundle = st.session_state.get("exact_bundle")
     event = component(state=state, product=product,
                       items=bundle["items"] if bundle else None,
+                      draft={key: bundle[key] for key in ("items", "model", "audience", "tone", "creative_brief")} if bundle else None,
                       atlas=_atlas_svg(product.get("f1", "")) if product else None,
                       key="approved-studio", default=None)
     if not isinstance(event, dict) or not event.get("id"):

@@ -30,15 +30,19 @@ async function sendProduct(action) {
     showToast(error.message);
   }
 }
-const applyProductLocally = form.onsubmit;
+function startNewProduct() {
+  form.reset();
+  productDialog.showModal();
+}
+document.getElementById("add-product").onclick = startNewProduct;
 form.onsubmit = async event => {
   event.preventDefault();
   const file = new FormData(form).get("photo");
   try {
     const photo = await imageData(file);
     if (!productValues().f0) return;
-    applyProductLocally(event);
-    sendAction("product", {product: productValues(), photo});
+    sendAction("product", {product: productValues(), photo, history_id: crypto.randomUUID()});
+    productDialog.close();
   } catch (error) {
     showToast(error.message);
   }
@@ -122,9 +126,81 @@ function restoreProduct(product) {
   document.getElementById("origin-name").textContent = product.f1 || "未填写";
   document.querySelector(".b-toolbar h1").textContent = product.f0;
 }
+
+const historyPage = document.getElementById("history-page");
+const historyList = document.getElementById("history-list");
+const historyEntry = document.getElementById("open-history");
+let historyDatabase;
+function openHistoryDatabase() {
+  historyDatabase ||= new Promise((resolve, reject) => {
+    const request = indexedDB.open("qilu-product-history", 1);
+    request.onupgradeneeded = () => request.result.createObjectStore("products", {keyPath: "id"});
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  return historyDatabase;
+}
+
+async function rememberProduct(product, draft) {
+  try {
+    const db = await openHistoryDatabase();
+    const transaction = db.transaction("products", "readwrite");
+    transaction.onabort = () => showToast("浏览器未能保存商品历史，请检查存储空间或隐私设置。");
+    transaction.objectStore("products").put({id: product.history_id, product, draft, updated: Date.now()});
+  } catch {
+    showToast("浏览器未能保存商品历史，请检查存储空间或隐私设置。");
+  }
+}
+
+function showHistory(show) {
+  document.body.classList.toggle("history-open", show);
+  historyPage.hidden = !show;
+  if (!show) return;
+  document.getElementById("history-title").focus({preventScroll: true});
+  historyList.textContent = "正在读取商品…";
+  openHistoryDatabase().then(db => {
+    const request = db.transaction("products").objectStore("products").getAll();
+    request.onerror = () => { historyList.textContent = "暂时无法读取商品记录，请重试。"; };
+    request.onsuccess = () => {
+      historyList.replaceChildren();
+      const records = request.result.sort((a, b) => b.updated - a.updated);
+      if (!records.length) {
+        historyList.append(textElement("p", "还没有商品记录。录入并保存一件商品后，它就会出现在这里。", "history-empty"));
+      }
+      for (const record of records) {
+        const row = textElement("div", "", "history-row");
+        const photo = document.createElement(record.product.photo ? "img" : "span");
+        photo.className = "history-photo";
+        if (record.product.photo) {
+          photo.src = record.product.photo;
+          photo.alt = "";
+          photo.loading = "lazy";
+        }
+        const info = document.createElement("div");
+        info.append(textElement("strong", record.product.f0), textElement("p",
+          [record.product.f1, record.draft ? "已有文案" : "待生成", new Date(record.updated).toLocaleDateString("zh-CN")]
+            .filter(Boolean).join(" · "), "history-meta"));
+        const open = textElement("button", "打开商品", "text-button");
+        open.type = "button";
+        open.setAttribute("aria-label", "打开商品 " + record.product.f0);
+        open.onclick = () => {
+          const {photo, history_id, ...product} = record.product;
+          sendAction("restore_product", {product, photo, history_id, draft: record.draft});
+        };
+        row.append(photo, info, open);
+        historyList.append(row);
+      }
+    };
+  }).catch(() => { historyList.textContent = "浏览器未开放本地存储，请检查隐私设置后重试。"; });
+}
+historyEntry.onclick = () => showHistory(true);
+document.getElementById("back-to-studio").onclick = () => { showHistory(false); historyEntry.focus(); };
+document.querySelector(".nav-links .current").onclick = () => showHistory(false);
+document.getElementById("new-history-product").onclick = startNewProduct;
+
 window.addEventListener("message", event => {
   if (event.source !== window.parent || event.data?.type !== "streamlit:render") return;
-  const {state, product, items, atlas} = event.data.args;
+  const {state, product, items, atlas, draft} = event.data.args;
   if (!hydrated) {
     hydrated = true;
     if (product) {
@@ -158,7 +234,8 @@ window.addEventListener("message", event => {
     atlas.hidden = !state.atlas;
   }
   if (state.resetDraft) {
-    leaveDemo();
+    if (product) restoreProduct(product);
+    showHistory(false);
     for (const key of Object.keys(samples)) {
       samples[key].title = "";
       samples[key].body = "";
@@ -182,6 +259,10 @@ window.addEventListener("message", event => {
     document.getElementById("b-title").textContent = "";
     document.getElementById("b-copy").textContent = "";
     setBChannel(bChannel);
+  }
+  if (product?.history_id && (state.action === "product" && state.resetDraft ||
+      state.action === "generate" && state.items || state.action === "save" && state.saved)) {
+    rememberProduct(product, draft);
   }
 });
 streamlitMessage("streamlit:componentReady", {apiVersion: 1});
