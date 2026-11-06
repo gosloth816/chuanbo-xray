@@ -29,7 +29,7 @@ def _atlas_svg(origin):
                        f'<text x="{x}" y="{y}">{label}</text>')
 
 
-EXACT_RELEASE = 5
+EXACT_RELEASE = 12
 
 
 class _StudioWithSafeTitles(StudioModel):
