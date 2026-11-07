@@ -2,13 +2,13 @@
 name = "chuanbo-xray"
 version = "2.0.0"
 description = "农业科技产品宣传材料诊断与证据核验工具"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
-  "streamlit>=1.51,<2",
-  "pypdf>=5,<7",
+  "streamlit>=1.60,<2",
+  "pypdf>=7,<8",
   "python-docx>=1.1,<2",
   "pandas>=2.2,<3",
-  "pillow>=10,<13",
+  "pillow>=13,<14",
   "requests>=2.31,<3",
 ]
 

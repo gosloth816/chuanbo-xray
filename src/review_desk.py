@@ -8,6 +8,8 @@ from streamlit.components.v1 import declare_component
 
 from .parsing import DocumentParseError, parse_document_bytes
 from .storage import ReviewStore
+from .studio_model import StudioError
+from .studio_security import reserve_request
 
 VERDICTS = {
     "supported": "有依据",
@@ -106,9 +108,10 @@ def render_review_desk():
                                 {"claim": claim_id, "checked": not row["checked"]})
                 result["message"] = "复核清单已更新。"
             elif name == "upload":
+                reserve_request("review")
                 _upload(event, review, claim_id, store)
                 result.update(uploaded=True, message="材料已关联，请核对材料摘录和原件。")
-        except DocumentParseError as error:
+        except (DocumentParseError, StudioError) as error:
             result["message"] = str(error)
         except (ValueError, KeyError, IndexError, TypeError):
             result["message"] = "无法读取材料，请选择 10 MB 以内的 PDF、DOCX 或 TXT。"

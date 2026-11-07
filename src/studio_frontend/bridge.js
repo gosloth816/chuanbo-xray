@@ -1,5 +1,5 @@
 const streamlitMessage = (type, data = {}) => {
-  window.parent.postMessage({isStreamlitMessage: true, type, ...data}, "*");
+  window.parent.postMessage({isStreamlitMessage: true, type, ...data}, location.origin);
 };
 const sendAction = (action, values = {}) => {
   streamlitMessage("streamlit:setComponentValue", {
@@ -89,7 +89,7 @@ function imageData(file) {
 }
 async function sendProduct(action) {
   try {
-    sendAction(action, {product: productValues(), photo: await imageData(new FormData(form).get("photo"))});
+    sendAction(action, {product: productValues(), photo: await imageData(new FormData(form).get("photo")), consent: true});
   } catch (error) {
     showToast(error.message);
   }
@@ -117,7 +117,7 @@ form.onsubmit = async event => {
       }
     }
     const photo = await imageData(file);
-    sendAction("product", {product, photo, history_id: crypto.randomUUID()});
+    sendAction("product", {product, photo});
     productDialog.close();
   } catch (error) {
     showToast(error.message);
@@ -148,7 +148,7 @@ generateButton.onclick = () => {
   generateButton.textContent = "生成中…";
   generationStatus.textContent = "已提交生成请求，请稍候。";
   generationTimer = setTimeout(() => finishGeneration("等待响应超时。请检查连接后再试。"), 125000);
-  sendAction("generate", {audience: document.getElementById("b-audience").value, tone: document.getElementById("b-tone").value, direction: document.getElementById("creative-direction").value.trim(),
+  sendAction("generate", {consent: true, audience: document.getElementById("b-audience").value, tone: document.getElementById("b-tone").value, direction: document.getElementById("creative-direction").value.trim(),
     focus: [...document.querySelectorAll(".inspector-facts input:checked")].map(input => input.value)});
 };
 function currentEdits() {
@@ -379,7 +379,7 @@ accountForm.onsubmit = event => {
 };
 
 window.addEventListener("message", event => {
-  if (event.source !== window.parent || event.data?.type !== "streamlit:render") return;
+  if (event.source !== window.parent || event.origin !== location.origin || event.data?.type !== "streamlit:render") return;
   const {state, product, items, atlas, draft, captcha} = event.data.args;
   hasShareProduct = Boolean(product);
   account = event.data.args.account || null;

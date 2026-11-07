@@ -6,7 +6,7 @@ from importlib import reload
 from src import studio_exact
 from src.studio_share import render_share
 
-if getattr(studio_exact, "EXACT_RELEASE", None) != 14:
+if getattr(studio_exact, "EXACT_RELEASE", None) != 15:
     reload(studio_exact)
 from src.ui_theme import inject_css
 from src.xray_workspace import render_xray_workspace
@@ -29,7 +29,7 @@ else:
         """<style>
         [data-testid="stHeader"],[data-testid="stSidebar"],[data-testid="stToolbar"]{display:none}
         [data-testid="stMainBlockContainer"]{padding:0;max-width:none}
-        iframe[title$="approved_studio_v14"]{display:block}
+        iframe[title$="approved_studio_v15"]{display:block}
         </style>""", unsafe_allow_html=True,
     )
     if st.session_state.get("show_xray"):

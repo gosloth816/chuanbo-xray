@@ -13,6 +13,8 @@
 
 ## 运行
 
+使用 Python 3.11 或更新版本。已有本地环境请先按 `requirements.txt` 更新依赖。
+
 ```powershell
 .\.venv\Scripts\python.exe -m streamlit run app.py
 ```

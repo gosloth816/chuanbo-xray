@@ -1,7 +1,7 @@
 # 传播 X 光运行依赖
-streamlit>=1.51,<2
-pypdf>=5,<7
+streamlit>=1.60,<2
+pypdf>=7,<8
 python-docx>=1.1,<2
 pandas>=2.2,<3
-pillow>=10,<13
+pillow>=13,<14
 requests>=2.31,<3

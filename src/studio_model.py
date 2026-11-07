@@ -49,15 +49,16 @@ class StudioError(ValueError):
     pass
 
 
-def prepare_image(data: bytes) -> str:
+def prepare_image(data: bytes, *, max_edge: int = 1600) -> str:
     if len(data) > 10 * 1024 * 1024:
         raise StudioError("图片请控制在10MB以内。")
     try:
-        with Image.open(BytesIO(data)) as image:
+        with Image.open(BytesIO(data), formats=["JPEG", "PNG", "WEBP"]) as image:
             if image.width * image.height > 24_000_000:
                 raise StudioError("图片像素过大，请缩小后重试。")
             image = ImageOps.exif_transpose(image).convert("RGB")
-            image.thumbnail((1600, 1600))
+            image.thumbnail((max_edge, max_edge))
+            image.info.clear()
             output = BytesIO()
             image.save(output, format="JPEG", quality=88)
     except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as exc:

@@ -7,6 +7,7 @@ import hashlib
 from pathlib import Path
 import re
 from typing import Iterable
+from zipfile import ZipFile
 
 from docx import Document
 from pypdf import PdfReader
@@ -161,9 +162,15 @@ def _parse_pdf(name: str, role: str, data: bytes, is_synthetic: bool) -> ParsedD
 
 def _parse_docx(name: str, role: str, data: bytes, is_synthetic: bool) -> ParsedDocument:
     try:
+        with ZipFile(BytesIO(data)) as archive:
+            entries = archive.infolist()
+            if len(entries) > 2000 or sum(entry.file_size for entry in entries) > 64 * 1024 * 1024:
+                raise DocumentParseError("DOCX 解包后的内容过大，请拆分文档后重试。")
         document = Document(BytesIO(data))
+    except DocumentParseError:
+        raise
     except Exception as exc:
-        raise DocumentParseError(f"DOCX 解析失败：{exc}") from exc
+        raise DocumentParseError("DOCX 解析失败，请检查文件是否完整。") from exc
 
     blocks: list[tuple[str, str, int | None, int | None]] = []
     paragraph_index = 0

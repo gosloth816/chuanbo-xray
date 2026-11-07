@@ -1,9 +1,11 @@
+from pathlib import Path
+
 from streamlit.testing.v1 import AppTest
 
 
 def make_app(tmp_path, monkeypatch):
     monkeypatch.setenv("XRAY_DATA_DIR", str(tmp_path / "runtime"))
-    return AppTest.from_file("xray_app.py", default_timeout=30).run()
+    return AppTest.from_file(str(Path(__file__).resolve().parents[1] / "xray_app.py"), default_timeout=30).run()
 
 
 def test_app_initial_render_has_tabs_and_no_exception(tmp_path, monkeypatch):

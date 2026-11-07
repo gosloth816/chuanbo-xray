@@ -10,20 +10,30 @@ from html import escape
 import streamlit as st
 
 from .storage import default_database_path
+from .studio_model import StudioError, prepare_image
+from .studio_security import decode_photo
 
 SHARE_LIFETIME = 24 * 60 * 60
+MAX_ACTIVE_SHARES = 600
+
+
+def _share_photo(value):
+    data = decode_photo(value)
+    return prepare_image(data, max_edge=1024) if data else ""
 
 
 def save_share(product, title, body):
     key = secrets.token_urlsafe(18)
     fields = ("f0", "f1", "f2", "f3", "photo", "product_url", "contact_url")
     snapshot = {field: product.get(field, "") for field in fields}
-    snapshot.update(title=title, body=body)
+    snapshot.update(title=title, body=body, photo=_share_photo(snapshot["photo"]), photo_clean=True)
     now = int(time.time())
     with closing(sqlite3.connect(default_database_path())) as db, db:
         db.execute("""CREATE TABLE IF NOT EXISTS studio_share_pages (
             key TEXT PRIMARY KEY, snapshot TEXT NOT NULL, expires_at INTEGER NOT NULL)""")
         db.execute("DELETE FROM studio_share_pages WHERE expires_at <= ?", (now,))
+        if db.execute("SELECT COUNT(*) FROM studio_share_pages").fetchone()[0] >= MAX_ACTIVE_SHARES:
+            raise StudioError("分享页暂时达到容量上限，请稍后再试。")
         db.execute("INSERT INTO studio_share_pages VALUES (?, ?, ?)",
                    (key, json.dumps(snapshot, ensure_ascii=False), now + SHARE_LIFETIME))
     return key
@@ -40,7 +50,13 @@ def render_share(key):
     if not row:
         st.info("商品分享页不存在或已失效，请向商家索取最新链接。")
         return
-    product = {field: escape(value, quote=True) for field, value in json.loads(row[0]).items()}
+    snapshot = json.loads(row[0])
+    if not snapshot.pop("photo_clean", False):
+        try:
+            snapshot["photo"] = _share_photo(snapshot["photo"])
+        except StudioError:
+            snapshot["photo"] = ""
+    product = {field: escape(value, quote=True) for field, value in snapshot.items()}
     photo = product["photo"]
     picture = (f'<img class="share-photo" src="{photo}" alt="{product["f0"]}的商品配图">' if photo else "")
     facts = "".join(f'<div><dt>{label}</dt><dd>{product[field]}</dd></div>'

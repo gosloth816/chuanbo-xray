@@ -12,6 +12,12 @@ FACTS = {"F1": {"field": "产品名称", "value": "演示苹果"}, "F2": {"field
 ITEMS = [{"channel": "朋友圈", "title": "演示苹果", "body": "演示苹果5斤装。", "fact_ids": ["F1", "F2"]}]
 
 
+def _legacy_studio():
+    # AppTest supports the Streamlit widget UI. The deployed HTML UI is exercised in a browser.
+    return AppTest.from_string("from src.studio_workspace import render_studio\nrender_studio()",
+                               default_timeout=30).run()
+
+
 def test_unconfirmed_number_and_claim_are_flagged():
     assert len(audit_copy("有机苹果，99元包邮，保证增产。", FACTS)) >= 4
 
@@ -50,20 +56,20 @@ def test_broken_image_fails_before_network():
 
 def test_studio_demo_edit_and_xray_round_trip(tmp_path, monkeypatch):
     monkeypatch.setenv("XRAY_DATA_DIR", str(tmp_path))
-    app = AppTest.from_file("app.py", default_timeout=30).run()
+    app = _legacy_studio()
     assert not app.exception
     next(b for b in app.button if b.label == "加载合成演示").click().run()
     assert not app.exception
     assert app.session_state["studio_bundle"]["synthetic"]
     next(b for b in app.button if b.label == "一键送至传播 X 光").click().run()
     assert not app.exception
-    assert app.session_state["workspace"] == "传播 X 光审核"
+    assert app.session_state["workspace_next"] == "传播 X 光审核"
     assert app.session_state["review"].claims
 
 
 def test_changing_facts_disables_generation_and_handoff(tmp_path, monkeypatch):
     monkeypatch.setenv("XRAY_DATA_DIR", str(tmp_path))
-    app = AppTest.from_file("app.py", default_timeout=30).run()
+    app = _legacy_studio()
     next(b for b in app.button if b.label == "加载合成演示").click().run()
     app.text_input(key="product_规格").set_value("10斤/箱").run()
     assert next(b for b in app.button if b.label == "一键送至传播 X 光").disabled
@@ -98,7 +104,7 @@ def test_public_app_without_model_still_runs_demo(tmp_path, monkeypatch):
     monkeypatch.setenv("XRAY_DEPLOYMENT_MODE", "public")
     for key in ("STUDIO_MODEL_BASE_URL", "STUDIO_MODEL_NAME", "STUDIO_MODEL_API_KEY"):
         monkeypatch.delenv(key, raising=False)
-    app = AppTest.from_file("app.py", default_timeout=30).run()
+    app = _legacy_studio()
     assert not app.exception
     assert any("云端模型尚未配置" in item.value for item in app.info)
     next(b for b in app.button if b.label == "加载合成演示").click().run()
@@ -165,7 +171,7 @@ def test_studio_keeps_selected_brief_in_export_and_handoff(tmp_path, monkeypatch
     monkeypatch.setenv("XRAY_DATA_DIR", str(tmp_path))
     for key in ("STUDIO_MODEL_BASE_URL", "STUDIO_MODEL_NAME", "STUDIO_MODEL_API_KEY", "XRAY_DEPLOYMENT_MODE"):
         monkeypatch.delenv(key, raising=False)
-    app = AppTest.from_file("app.py", default_timeout=30).run()
+    app = _legacy_studio()
     next(b for b in app.button if b.label == "加载合成演示").click().run()
     next(s for s in app.selectbox if s.label == "这次文案的目标").select("介绍新品").run()
     next(s for s in app.selectbox if s.label == "文案篇幅").select("精简短稿").run()
