@@ -8,9 +8,73 @@ const sendAction = (action, values = {}) => {
 };
 const channelKeys = {"朋友圈": "moments", "商品详情页": "detail", "短视频口播": "script"};
 const form = document.getElementById("product-form");
+const productLinkFields = [["product_url", "查看商品"], ["contact_url", "联系商家"]];
+const productFields = ["f0", "f1", "f2", "f3", "f4", "intro", ...productLinkFields.map(([name]) => name)];
+const shareButton = document.getElementById("preview-share");
+const shareDialog = document.getElementById("share-preview-dialog");
+const shareConfirm = document.getElementById("confirm-share");
+const shareLink = document.getElementById("share-preview-link");
+const shareDescription = document.getElementById("share-description");
+const shareStatus = document.getElementById("share-status");
+let hasShareProduct = false;
+shareButton.onclick = () => {
+  if (!hasShareProduct) return showToast("请先录入并保存商品。");
+  const {title, body} = currentDraft();
+  if (!title.trim() && !body.trim()) return showToast("请先填写或生成朋友圈文案。");
+  shareDescription.textContent = "任何拿到链接的人都能看到当前朋友圈文案、商品图、商品信息和已填写的链接。试用链接最长可用 24 小时。";
+  shareStatus.textContent = "";
+  shareConfirm.hidden = false;
+  shareLink.hidden = true;
+  document.getElementById("close-share-dialog").textContent = "取消";
+  shareDialog.showModal();
+};
+shareConfirm.onclick = () => {
+  shareConfirm.disabled = true;
+  shareStatus.textContent = "正在生成链接…";
+  sendAction("preview_share", {...currentDraft(), confirmed: true});
+};
 function productValues() {
-  return Object.fromEntries(["f0", "f1", "f2", "f3", "f4", "intro"].map(name => [name, form.elements[name].value.trim()]));
+  return Object.fromEntries(productFields.map(name => [name, form.elements[name].value.trim()]));
 }
+
+function safeProductLink(value) {
+  if (typeof value !== "string" || !/^https:\/\/[^/]/i.test(value)
+      || /[\\\s\u0000-\u001f]/u.test(value) || value.length > 2048) return "";
+  try {
+    const url = new URL(value);
+    return url.hostname && !url.username && !url.password && url.port !== "0" ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+document.getElementById("copy-moments").onclick = async () => {
+  const {title, body} = currentDraft();
+  const copy = [title.trim(), body.trim(),
+    previewProductLinks.map(({label, url}) => `${label}：${url}`).join("\n")].filter(Boolean).join("\n\n");
+  try {
+    await navigator.clipboard.writeText(copy);
+    showToast("已复制朋友圈文案，可在微信粘贴。");
+  } catch {
+    const dialog = document.getElementById("manual-copy-dialog");
+    const text = dialog.querySelector("textarea");
+    text.value = copy;
+    dialog.showModal();
+    text.select();
+  }
+};
+
+document.getElementById("save-moments-photo").onclick = () => {
+  const image = currentProductImage();
+  if (!image) return;
+  const type = /^data:image\/(jpeg|png|webp);base64,/.exec(image.src)?.[1];
+  const extension = type === "jpeg" ? "jpg" : type || "png";
+  const name = document.querySelector(".b-source h3").textContent.replace(/[<>:"/\\|?*]/g, "_").slice(0, 60);
+  const link = document.createElement("a");
+  link.href = image.src;
+  link.download = `${name || "商品"}-配图.${extension}`;
+  link.click();
+};
 function imageData(file) {
   if (!file.size) return Promise.resolve("");
   if (file.size > 10 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
@@ -32,16 +96,28 @@ async function sendProduct(action) {
 }
 function startNewProduct() {
   form.reset();
+  for (const [name] of productLinkFields) form.elements[name].setCustomValidity("");
   productDialog.showModal();
 }
 document.getElementById("add-product").onclick = startNewProduct;
+for (const [name] of productLinkFields) {
+  form.elements[name].addEventListener("input", event => event.target.setCustomValidity(""));
+}
 form.onsubmit = async event => {
   event.preventDefault();
   const file = new FormData(form).get("photo");
   try {
+    const product = productValues();
+    if (!product.f0) return;
+    for (const [name] of productLinkFields) {
+      if (product[name] && !safeProductLink(product[name])) {
+        form.elements[name].setCustomValidity("请输入以 https:// 开头的完整链接。");
+        form.elements[name].reportValidity();
+        return;
+      }
+    }
     const photo = await imageData(file);
-    if (!productValues().f0) return;
-    sendAction("product", {product: productValues(), photo, history_id: crypto.randomUUID()});
+    sendAction("product", {product, photo, history_id: crypto.randomUUID()});
     productDialog.close();
   } catch (error) {
     showToast(error.message);
@@ -108,9 +184,11 @@ function renderFocus(product) {
 function restoreProduct(product) {
   leaveDemo();
   renderFocus(product);
-  for (const key of ["f0", "f1", "f2", "f3", "f4", "intro"]) {
+  for (const key of productFields) {
     form.elements[key].value = product[key] || "";
   }
+  previewProductLinks = productLinkFields.map(([name, label]) => ({label, url: safeProductLink(product[name])}))
+    .filter(({url}) => url);
   productSource.querySelector("h3").textContent = product.f0;
   productSource.querySelectorAll("dd").forEach((field, index) => {
     field.textContent = product["f" + (index + 1)] || "未填写";
@@ -303,6 +381,7 @@ accountForm.onsubmit = event => {
 window.addEventListener("message", event => {
   if (event.source !== window.parent || event.data?.type !== "streamlit:render") return;
   const {state, product, items, atlas, draft, captcha} = event.data.args;
+  hasShareProduct = Boolean(product);
   account = event.data.args.account || null;
   accountWorks = event.data.args.account_works || [];
   temporaryAccounts = event.data.args.temporary_accounts;
@@ -332,6 +411,20 @@ window.addEventListener("message", event => {
   }
   if (!state || state.id === applied) return;
   applied = state.id;
+  if (state.action === "preview_share") {
+    shareConfirm.disabled = false;
+    shareStatus.textContent = state.message || "";
+    if (state.share_key) {
+      const url = new URL("/", location.origin);
+      url.searchParams.set("share", state.share_key);
+      shareLink.href = url.href;
+      shareLink.hidden = false;
+      shareConfirm.hidden = true;
+      shareDescription.textContent = "链接已生成。打开分享页后，可以复制浏览器地址发给他人。";
+      document.getElementById("close-share-dialog").textContent = "关闭";
+    }
+    return;
+  }
   if (state.action === "login" || state.action === "register") {
     accountSubmit.disabled = false;
     if (state.registered) accountMode(false);

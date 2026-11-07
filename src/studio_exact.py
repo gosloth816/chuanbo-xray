@@ -6,6 +6,7 @@ from io import BytesIO
 from uuid import uuid4
 from html import escape
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
@@ -17,6 +18,7 @@ from .storage import ReviewStore
 from .studio import new_bundle, persist, save_edit, send_to_xray
 from .studio_accounts import _admin_config, _create, authenticate, database, list_works, load_work, save_work
 from .studio_model import CHANNELS, StudioError, StudioModel
+from .studio_share import save_share
 from .studio_workspace import _match_origin, _origin_atlas
 
 
@@ -35,7 +37,7 @@ def _atlas_svg(origin):
                        f'<text x="{x}" y="{y}">{label}</text>')
 
 
-EXACT_RELEASE = 13
+EXACT_RELEASE = 14
 
 
 class _StudioWithSafeTitles(StudioModel):
@@ -61,6 +63,28 @@ def _model():
     except StreamlitSecretNotFoundError:
         settings = {}
     return _StudioWithSafeTitles(settings=settings, public=is_public_deployment())
+
+
+def _product_links(product):
+    links = {}
+    for key, label in (("product_url", "商品链接"), ("contact_url", "客服链接")):
+        value = product.get(key, "")
+        if not isinstance(value, str):
+            raise StudioError(f"请填写完整有效的 HTTPS{label}。")
+        value = value.strip()
+        if value:
+            try:
+                parsed = urlsplit(value)
+                port = parsed.port
+                valid = (parsed.scheme == "https" and parsed.hostname and parsed.username is None
+                         and "\\" not in value and not any(char.isspace() or ord(char) < 32 for char in value)
+                         and len(value) <= 2048 and (port is None or port > 0))
+            except ValueError:
+                valid = False
+            if not valid:
+                raise StudioError(f"请填写完整有效的 HTTPS{label}。")
+        links[key] = value
+    return links
 
 
 def _challenge():
@@ -125,6 +149,15 @@ def _account_action(action, event, result):
 
 def _run_action(event, result):
     action = event.get("action")
+    if action == "preview_share":
+        if event.get("confirmed") is not True:
+            raise StudioError("请先确认公开这份商品内容。")
+        product = st.session_state.get("exact_product")
+        title, body = (event[key].strip()[:6000] for key in ("title", "body"))
+        if not product or not (title or body):
+            raise StudioError("请先保存商品，并填写朋友圈文案。")
+        result["share_key"] = save_share(product, title, body)
+        return
     if action == "refresh_captcha":
         st.session_state.pop("studio_captcha", None)
         return
@@ -189,7 +222,8 @@ def _run_action(event, result):
                                     audience=restored["audience"][:80], tone=restored["tone"][:80],
                                     creative_brief=restored.get("creative_brief", {}))
                 bundle["origin"] = "从当前浏览器恢复的历史文稿"
-            confirmed = {**product, "photo": photo or previous_photo, "history_id": history_id}
+            confirmed = {**product, **_product_links(product), "photo": photo or previous_photo,
+                         "history_id": history_id}
             if owner and action == "product":
                 save_work(owner, confirmed, None)
             st.session_state["exact_product"] = confirmed
@@ -247,7 +281,7 @@ def _run_action(event, result):
 
 
 def render_exact_studio():
-    component = declare_component("approved_studio_v13", path=Path(__file__).with_name("studio_frontend"))
+    component = declare_component("approved_studio_v14", path=Path(__file__).with_name("studio_frontend"))
     state = st.session_state.get("exact_result") or {}
     product = st.session_state.get("exact_product")
     bundle = st.session_state.get("exact_bundle")

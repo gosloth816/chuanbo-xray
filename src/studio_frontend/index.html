@@ -90,7 +90,11 @@
  <div class="b-toolbar"><h1>演示苹果的日常推广</h1><span class="muted">手机文稿工作区</span><div class="spacer"></div><button class="secondary" onclick="savePreview()">保存到本页</button><button class="primary" onclick="downloadDraft()">下载示例文案</button></div>
  <div class="fusion-view-toggle" role="group" aria-label="手机尺寸工作区切换"><button aria-pressed="true" data-mobile-mode="editor">编辑文案</button><button aria-pressed="false" data-mobile-mode="phone">手机预览</button></div><div class="b-body">
   <aside class="b-source" aria-label="商品事实"><h2>本次商品</h2><button class="primary" id="add-product" type="button">录入我的商品</button><img src="apples-studio.png" width="1536" height="1024" alt="合成苹果商品图"><h3>演示苹果</h3><dl><div class="facts-row"><dt>产地</dt><dd>山东烟台</dd></div><div class="facts-row"><dt>规格</dt><dd>5斤 / 箱</dd></div><div class="facts-row"><dt>价格</dt><dd>39元 / 箱</dd></div><div class="facts-row"><dt>特点</dt><dd>红色果皮</dd></div></dl><figure class="origin-map"><figcaption>商品产地 <span id="origin-name">山东烟台</span></figcaption><div id="unified-atlas"></div><small id="origin-caption">数据来源：阿里云 DataV GeoAtlas</small></figure><p class="notice">合成商品设定。没有提供甜度、认证和物流信息。</p><button class="text-button" id="fact-toggle" aria-pressed="false" onclick="toggleFacts()">在文中标出商品事实</button></aside>
-  <div class="b-editor"><div class="b-channel-tabs" role="tablist" aria-label="文案渠道"><button role="tab" data-b-channel="moments" aria-selected="true">朋友圈</button><button role="tab" data-b-channel="detail" aria-selected="false">商品详情页</button><button role="tab" data-b-channel="script" aria-selected="false">短视频口播</button></div><button class="text-button" id="edit-toggle" type="button" aria-expanded="false">编辑当前文稿</button><article hidden class="paper" role="tabpanel" aria-label="当前渠道示例文稿"><div class="paper-top"><span id="b-type">朋友圈文案</span><span>可直接编辑</span></div><h2 contenteditable="true" role="textbox" aria-label="编辑文案标题" id="b-title" spellcheck="false"></h2><div contenteditable="true" role="textbox" aria-multiline="true" aria-label="编辑文案正文" class="paper-body" id="b-copy" spellcheck="false"></div><div class="paper-bottom"><span id="b-count"></span><button onclick="showToast('这是人工撰写的界面样稿，不代表模型已经生成同等质量的结果。')">查看示例说明</button></div></article><aside class="preview-panel" aria-label="手机效果预览"><div class="preview-panel-heading"><h2>手机效果</h2><button class="text-button" onclick="openReview()">发布前核对</button></div><p class="preview-channel-note" id="preview-channel-note">朋友圈 · 随编辑同步</p><div class="phone-holder"><div class="phone" role="region" aria-label="当前文稿的手机预览"><div class="phone-status"><span>9:41</span><svg aria-hidden="true" viewBox="0 0 34 12" fill="none" stroke="currentColor" stroke-width="1"><path d="M1 10V8m4 2V5m4 5V2" stroke-width="2"/><rect x="15" y="2" width="15" height="8" rx="2"/><path d="M32 5v2"/><path d="M17 4h10v4H17Z" fill="currentColor" stroke="none"/></svg></div><div class="phone-bar"><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m12 4-6 6 6 6"/></svg><span id="phone-channel">朋友圈</span><svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor"><circle cx="4" cy="10" r="1.2"/><circle cx="10" cy="10" r="1.2"/><circle cx="16" cy="10" r="1.2"/></svg></div><div id="phone-content" class="phone-scroll"></div><div class="phone-home"></div></div></div><div class="preview-bottom"><span class="sync-state"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m3 8 3 3 7-7"/></svg> 与当前文稿同步</span><span id="preview-count"></span></div><p class="notice">渠道排版示意，不代表平台实际发布效果。<span data-demo-only><br>商品图为合成素材，文案为手写样稿。</span></p></aside><div class="b-editor-note"><span data-demo-only>示例编辑仅在当前页面保留</span><span data-demo-only>商品信息为合成设定</span></div></div>
+  <div class="b-editor"><div class="b-channel-tabs" role="tablist" aria-label="文案渠道"><button role="tab" data-b-channel="moments" aria-selected="true">朋友圈</button><button role="tab" data-b-channel="detail" aria-selected="false">商品详情页</button><button role="tab" data-b-channel="script" aria-selected="false">短视频口播</button></div><button class="text-button" id="edit-toggle" type="button" aria-expanded="false">编辑当前文稿</button><article hidden class="paper" role="tabpanel" aria-label="当前渠道示例文稿"><div class="paper-top"><span id="b-type">朋友圈文案</span><span>可直接编辑</span></div><h2 contenteditable="true" role="textbox" aria-label="编辑文案标题" id="b-title" spellcheck="false"></h2><div contenteditable="true" role="textbox" aria-multiline="true" aria-label="编辑文案正文" class="paper-body" id="b-copy" spellcheck="false"></div><div class="paper-bottom"><span id="b-count"></span><button onclick="showToast('这是人工撰写的界面样稿，不代表模型已经生成同等质量的结果。')">查看示例说明</button></div></article><aside class="preview-panel" aria-label="手机效果预览"><div class="preview-panel-heading"><h2>手机效果</h2><button class="text-button" onclick="openReview()">发布前核对</button></div><p class="preview-channel-note" id="preview-channel-note">朋友圈 · 随编辑同步</p><div class="moments-actions" id="moments-actions" aria-label="朋友圈发布准备">
+  <button class="secondary" type="button" id="copy-moments">复制文案</button>
+  <button class="secondary" type="button" id="save-moments-photo">保存配图</button>
+  <button class="secondary" type="button" id="preview-share">生成分享页</button>
+</div><div class="phone-holder"><div class="phone" role="region" aria-label="当前文稿的手机预览"><div class="phone-status"><span>9:41</span><svg aria-hidden="true" viewBox="0 0 34 12" fill="none" stroke="currentColor" stroke-width="1"><path d="M1 10V8m4 2V5m4 5V2" stroke-width="2"/><rect x="15" y="2" width="15" height="8" rx="2"/><path d="M32 5v2"/><path d="M17 4h10v4H17Z" fill="currentColor" stroke="none"/></svg></div><div class="phone-bar"><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m12 4-6 6 6 6"/></svg><span id="phone-channel">朋友圈</span><svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor"><circle cx="4" cy="10" r="1.2"/><circle cx="10" cy="10" r="1.2"/><circle cx="16" cy="10" r="1.2"/></svg></div><div id="phone-content" class="phone-scroll"></div><div class="phone-home"></div></div></div><div class="preview-bottom"><span class="sync-state"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m3 8 3 3 7-7"/></svg> 与当前文稿同步</span><span id="preview-count"></span></div><p class="notice">渠道排版示意，不代表平台实际发布效果。<span data-demo-only><br>商品图为合成素材，文案为手写样稿。</span></p></aside><div class="b-editor-note"><span data-demo-only>示例编辑仅在当前页面保留</span><span data-demo-only>商品信息为合成设定</span></div></div>
 <aside class="b-inspector" aria-label="表达设置与审核"><h2>表达设定</h2><div class="inspector-field"><label for="b-audience">对谁说</label><select id="b-audience" name="audience"><option>家庭日常购买</option><option>年轻上班族</option><option>社区团购</option></select></div><div class="inspector-field"><label for="b-tone">怎么说</label><select id="b-tone" name="tone"><option>温暖生活化</option><option>自然直接</option><option>简洁克制</option></select></div><div class="inspector-field"><label>主推信息</label><div class="inspector-facts"><span>5斤 / 箱</span><span>39元 / 箱</span></div></div><div class="inspector-field"><label for="creative-direction">创作方向</label><textarea id="creative-direction" rows="3" maxlength="600" placeholder="例如：从早餐搭配切入，结尾邀请咨询">下班后的家庭补货</textarea></div><p class="notice">此处设置用于生成正式商品文案。</p>
 <label class="notice"><input type="checkbox" id="allow-generate">允许将确认的商品资料发送给模型</label>
 <button class="primary" id="generate-copy" type="button">生成文案</button><div class="divider"></div><h3>发布前检查</h3><button class="secondary" id="review-copy" type="button">送至传播 X 光</button><div class="audit-line"><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="7"/><path d="M10 5v6m0 3v1"/></svg><span>商品资料来自商家填写，仍需核实。</span></div><div class="audit-line"><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="7"/><path d="M10 5v6m0 3v1"/></svg><span>生活场景不等于真实用户体验。</span></div><p class="notice" id="sample-disclaimer">图片为 AI 合成素材。这里的提示是界面示意，不是自动审核结论。</p></aside>
@@ -110,26 +114,45 @@ function currentDraft(){return {title:document.getElementById('b-title').innerTe
 function stashDraft(){draftEdits[bChannel]=currentDraft()}
 function updateCount(){const count=currentDraft().body.replace(/\s/g,'').length;document.getElementById('b-count').textContent='正文 '+count+' 字'+(document.body.classList.contains('merchant-product')?' · 可编辑':' · 手写示例，可编辑');document.getElementById('preview-count').textContent=count+' 字'}
 function textElement(tag,text,cls){const el=document.createElement(tag);el.textContent=text;if(cls)el.className=cls;return el}
-function appendProductImage(target){
+function currentProductImage(){
  const source=document.querySelector('.b-source img');
- if(!source || source.hidden || !source.getAttribute('src'))return;
+ return source && !source.hidden && source.getAttribute('src') ? source : null;
+}
+function appendProductImage(target){
+ const source=currentProductImage();
+ if(!source)return;
  const image=source.cloneNode();
  image.removeAttribute('fetchpriority');
  target.append(image);
+}
+let previewProductLinks=[];
+function appendProductLinks(target){
+ if(!previewProductLinks.length)return;
+ const group=document.createElement('div');group.className='phone-product-links';
+ for(const {label,url} of previewProductLinks){
+  const link=textElement('a',label);
+  link.href=url;link.target='_blank';link.rel='noopener noreferrer';
+  group.append(link);
+ }
+ target.append(group);
 }
 function syncPhone(){
  const {title,body}=currentDraft(),box=document.getElementById('phone-content');
  const scroll=box.scrollTop;box.replaceChildren();box.className='phone-scroll';
  document.getElementById('phone-channel').textContent=bChannel==='script'?'口播提词预览':samples[bChannel].label;
  document.getElementById('preview-channel-note').textContent=samples[bChannel].label+' · 随编辑同步';
- if(!title.trim()&&!body.trim()){box.append(textElement('p','在中间编辑区输入标题和正文，手机里会同步显示。','notice'));updateCount();return}
+ document.getElementById('moments-actions').hidden=bChannel!=='moments';
+ document.getElementById('copy-moments').disabled=!title.trim()&&!body.trim();
+ document.getElementById('save-moments-photo').disabled=!currentProductImage();
+ if(!title.trim()&&!body.trim()){box.append(textElement('p','在中间编辑区输入标题和正文，手机里会同步显示。','notice'));if(bChannel!=='script')appendProductLinks(box);updateCount();return}
  if(bChannel==='moments'){
   const row=document.createElement('div');row.className='phone-user';row.append(textElement('div','齐鲁','phone-user-avatar'));
   const content=document.createElement('div');content.append(textElement('strong','齐鲁小铺（虚构店名）'),textElement('p',[title,body].filter(Boolean).join('\n\n')));appendProductImage(content);
+  appendProductLinks(content);
   const time=textElement('div','刚刚 · 排版示意','phone-time');content.append(time);row.append(content);box.append(row);
  }else if(bChannel==='detail'){
   box.classList.add('phone-detail');appendProductImage(box);const content=document.createElement('div');content.className='phone-detail-copy';
-  content.append(textElement('h3',title),textElement('p',body));const button=textElement('button','咨询商品信息','primary');button.onclick=()=>showToast('这里只展示咨询入口，不会联系商家。');content.append(button);box.append(content);
+  content.append(textElement('h3',title),textElement('p',body));appendProductLinks(content);box.append(content);
  }else{
   box.classList.add('phone-script');box.append(textElement('p','口播提词示意 · 不播放音频或视频','script-note'),textElement('h3',title));
   const excerpt=textElement('p',getSubtitle(),'subtitle-line');excerpt.id='subtitle-line';
@@ -201,7 +224,12 @@ const entry=document.getElementById('open-workbench');
 const back=document.getElementById('return-creation');
 entry.onclick=()=>{workbench.hidden=false;document.body.style.overflow='hidden';back.focus()};
 back.onclick=()=>{workbench.hidden=true;document.body.style.overflow='';entry.focus()};
-</script><dialog id="product-dialog"><form id="product-form"><h2>录入商品</h2><label>商品名称<input name="f0" maxlength="100" required></label><label>产地<input name="f1" maxlength="100" ></label><label>规格<input name="f2" maxlength="100" ></label><label>价格<input name="f3" maxlength="100" ></label><label>特点<input name="f4" maxlength="100" ></label><label>简要介绍<textarea name="intro" maxlength="600" rows="3"></textarea></label><label>商品图片<input type="file" name="photo" accept="image/png,image/jpeg,image/webp"></label><p class="notice">保存后可在「我的作品」找回这件商品。</p><button type="button" class="secondary" id="cancel-product">取消</button> <button class="primary">保存商品</button>
+</script><dialog id="product-dialog"><form id="product-form"><h2>录入商品</h2><label>商品名称<input name="f0" maxlength="100" required></label><label>产地<input name="f1" maxlength="100" ></label><label>规格<input name="f2" maxlength="100" ></label><label>价格<input name="f3" maxlength="100" ></label><label>特点<input name="f4" maxlength="100" ></label><label>简要介绍<textarea name="intro" maxlength="600" rows="3"></textarea></label><label>商品图片<input type="file" name="photo" accept="image/png,image/jpeg,image/webp"></label><fieldset class="product-links">
+  <legend>商品链接与客服 <span>选填</span></legend>
+  <label>商品链接<input name="product_url" type="url" maxlength="2048" placeholder="https:// 商品详情页"></label>
+  <label>客服链接<input name="contact_url" type="url" maxlength="2048" placeholder="https:// 店铺客服入口"></label>
+  <p>填写后，链接会随朋友圈文案复制。</p>
+</fieldset><p class="notice">保存后可在「我的作品」找回这件商品。</p><button type="button" class="secondary" id="cancel-product">取消</button> <button class="primary">保存商品</button>
 <label><input type="checkbox" id="allow-extract">允许将图片和介绍发送给模型识图</label>
 <button type="button" class="secondary" id="extract-product">AI识图</button></form></dialog>
 <style>#product-dialog{width:min(460px,calc(100% - 28px));max-height:90vh;border:0;border-radius:14px;padding:24px;color:#1d1d1f}#product-dialog::backdrop{background:#0005}#product-form label{display:block;margin:10px 0;font-size:14px}#product-form input,#product-form textarea{display:block;width:100%;margin-top:4px;border:1px solid #ccc;border-radius:6px;padding:7px}#add-product{grid-column:1/-1;margin-top:14px}</style>
@@ -299,7 +327,20 @@ updateOriginMap('山东烟台');
     <button class="primary" value="logout">退出登录</button>
   </form>
 </dialog>
+<dialog class="studio-dialog" id="share-preview-dialog" aria-labelledby="share-preview-title">
+  <h2 id="share-preview-title">商品分享页</h2>
+  <p class="dialog-description" id="share-description"></p>
+  <p class="input-hint" id="share-status" role="status"></p>
+  <div class="logout-actions">
+    <form method="dialog"><button class="secondary" id="close-share-dialog">取消</button></form>
+    <button class="primary" type="button" id="confirm-share">生成公开链接</button>
+    <a class="primary" id="share-preview-link" target="_blank" rel="noopener noreferrer" hidden>打开分享页</a>
+  </div>
+</dialog>
 <style>
+#share-preview-link{text-decoration:none}
+#share-preview-link[hidden],#confirm-share[hidden]{display:none}
+#share-status:not(:empty){margin:0 0 12px}
 #account-entry{font-size:14px;padding:6px 15px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .studio-dialog{width:min(460px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto;border:1px solid var(--line);border-radius:16px;background:#fff;padding:28px 30px;color:var(--ink)}
 .studio-dialog::backdrop{background:#171b2a66}
@@ -320,4 +361,22 @@ updateOriginMap('山东烟台');
 .logout-icon{display:grid;place-items:center;width:44px;height:44px;margin:0 0 16px;border-radius:12px;background:#edf4fc;color:#005cb8}
 @media(max-width:460px){.studio-dialog{padding:23px 20px}#account-entry{max-width:95px}.fusion .nav-end{gap:8px}}
 </style>
-<script src="bridge.js"></script></body></html>
+<dialog class="studio-dialog" id="manual-copy-dialog" aria-labelledby="manual-copy-title">
+  <h2 id="manual-copy-title">复制朋友圈文案</h2>
+  <p class="dialog-description">浏览器未允许自动复制，请选中下方文案后复制。</p>
+  <textarea aria-label="待复制的朋友圈文案" readonly rows="8"></textarea>
+  <form method="dialog" class="logout-actions"><button class="secondary">关闭</button></form>
+</dialog>
+<style>
+#manual-copy-dialog textarea{width:100%;margin:0 0 14px;padding:10px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:14px;color:inherit;resize:vertical}
+.moments-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:0 0 14px}
+.moments-actions[hidden]{display:none}
+.moments-actions button{min-height:38px;padding:6px 14px;font-size:13px}
+.moments-actions button:disabled{color:var(--muted);background:var(--pale);cursor:default}
+.phone-product-links{display:flex;flex-wrap:wrap;gap:8px 14px;margin:12px 0 0}
+.phone-product-links a{color:var(--blue);font-size:13px;text-decoration:underline;text-underline-offset:3px}
+.product-links{min-width:0;margin:15px 0 12px;padding:0 0 6px;border:0;border-top:1px solid var(--line)}
+.product-links legend{font-size:14px;font-weight:600;padding-right:8px}
+.product-links legend span,.product-links p{color:var(--muted);font-size:12px;font-weight:400}
+.product-links p{margin:5px 0}
+</style><script src="bridge.js"></script></body></html>
