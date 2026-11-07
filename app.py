@@ -11,7 +11,7 @@ if getattr(studio_exact, "EXACT_RELEASE", None) != 15:
 from src.ui_theme import inject_css
 from src.xray_workspace import render_xray_workspace
 
-st.set_page_config(page_title="齐鲁卖点｜创作与发布前审核", layout="wide")
+st.set_page_config(page_title="齐鲁卖点｜农产品智能传播工作台", layout="wide")
 if "share" in st.query_params:
     render_share(st.query_params["share"])
     st.stop()
