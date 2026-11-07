@@ -152,44 +152,65 @@ async function rememberProduct(product, draft) {
   }
 }
 
+let account = null;
+let accountWorks = [];
+let temporaryAccounts = false;
+
+function renderHistory(records) {
+  historyList.replaceChildren();
+  if (!records.length) {
+    historyList.append(textElement("p", "还没有商品记录。录入并保存一件商品后，它就会出现在这里。", "history-empty"));
+  }
+  for (const record of records) {
+    const row = textElement("div", "", "history-row");
+    const photo = document.createElement(record.product.photo ? "img" : "span");
+    photo.className = "history-photo";
+    if (record.product.photo) {
+      photo.src = record.product.photo;
+      photo.alt = "";
+      photo.loading = "lazy";
+    }
+    const info = document.createElement("div");
+    info.append(textElement("strong", record.product.f0), textElement("p",
+      [record.product.f1, record.draft ? "已有文案" : "待生成", new Date(record.updated).toLocaleDateString("zh-CN")]
+        .filter(Boolean).join(" · "), "history-meta"));
+    const open = textElement("button", "打开商品", "text-button");
+    open.type = "button";
+    open.setAttribute("aria-label", "打开商品 " + record.product.f0);
+    open.onclick = () => {
+      if (record.workId) {
+        sendAction("restore_account_product", {work_id: record.workId});
+      } else {
+        const {photo, history_id, ...product} = record.product;
+        sendAction("restore_product", {product, photo, history_id, draft: record.draft});
+      }
+    };
+    row.append(photo, info, open);
+    historyList.append(row);
+  }
+}
+
 function showHistory(show) {
   document.body.classList.toggle("history-open", show);
   historyPage.hidden = !show;
   if (!show) return;
   document.getElementById("history-title").focus({preventScroll: true});
+  const description = document.getElementById("history-description");
+  if (account) {
+    description.textContent = temporaryAccounts
+      ? "这里只显示当前账号的作品。服务更新或重启后，体验版记录可能清空。"
+      : "这里只显示当前账号的作品。";
+    renderHistory(accountWorks.map(work => ({workId: work.work_id, product: {f0: work.name, f1: work.origin},
+      draft: work.has_draft, updated: work.updated * 1000})));
+    return;
+  }
+  description.textContent = "找回已录入的商品，继续生成或编辑文案。访客记录保存在当前浏览器。";
   historyList.textContent = "正在读取商品…";
   openHistoryDatabase().then(db => {
     const request = db.transaction("products").objectStore("products").getAll();
     request.onerror = () => { historyList.textContent = "暂时无法读取商品记录，请重试。"; };
     request.onsuccess = () => {
-      historyList.replaceChildren();
-      const records = request.result.sort((a, b) => b.updated - a.updated);
-      if (!records.length) {
-        historyList.append(textElement("p", "还没有商品记录。录入并保存一件商品后，它就会出现在这里。", "history-empty"));
-      }
-      for (const record of records) {
-        const row = textElement("div", "", "history-row");
-        const photo = document.createElement(record.product.photo ? "img" : "span");
-        photo.className = "history-photo";
-        if (record.product.photo) {
-          photo.src = record.product.photo;
-          photo.alt = "";
-          photo.loading = "lazy";
-        }
-        const info = document.createElement("div");
-        info.append(textElement("strong", record.product.f0), textElement("p",
-          [record.product.f1, record.draft ? "已有文案" : "待生成", new Date(record.updated).toLocaleDateString("zh-CN")]
-            .filter(Boolean).join(" · "), "history-meta"));
-        const open = textElement("button", "打开商品", "text-button");
-        open.type = "button";
-        open.setAttribute("aria-label", "打开商品 " + record.product.f0);
-        open.onclick = () => {
-          const {photo, history_id, ...product} = record.product;
-          sendAction("restore_product", {product, photo, history_id, draft: record.draft});
-        };
-        row.append(photo, info, open);
-        historyList.append(row);
-      }
+      if (!account) renderHistory(request.result.sort((a, b) => b.updated - a.updated));
     };
   }).catch(() => { historyList.textContent = "浏览器未开放本地存储，请检查隐私设置后重试。"; });
 }
@@ -198,9 +219,97 @@ document.getElementById("back-to-studio").onclick = () => { showHistory(false); 
 document.querySelector(".nav-links .current").onclick = () => showHistory(false);
 document.getElementById("new-history-product").onclick = startNewProduct;
 
+const accountDialog = document.getElementById("account-dialog");
+const logoutDialog = document.getElementById("logout-dialog");
+const accountEntry = document.getElementById("account-entry");
+const accountForm = document.getElementById("account-form");
+const accountStatus = document.getElementById("account-status");
+const accountSubmit = document.getElementById("account-submit");
+const nameInput = accountForm.elements.username;
+const passwordInput = accountForm.elements.password;
+const captchaInput = accountForm.elements.captcha;
+let registering = false;
+
+function accountMode(register) {
+  registering = register;
+  document.getElementById("account-title").textContent = register ? "注册新用户" : "登录";
+  document.getElementById("account-description").textContent = register
+    ? "创建账号后，即可保存自己的商品和文案。" : "登录后可查看自己账号下的作品。";
+  document.getElementById("account-mode").textContent = register ? "返回登录" : "注册新用户";
+  document.getElementById("account-storage-note").hidden = !register || !temporaryAccounts;
+  accountSubmit.textContent = register ? "创建账号" : "登录";
+  for (const [input, hint, limit] of [[nameInput, "account-name-hint", 32], [passwordInput, "account-password-hint", 128]]) {
+    document.getElementById(hint).hidden = !register;
+    input.maxLength = register ? 20 : limit;
+    if (register) input.setAttribute("aria-describedby", hint);
+    else input.removeAttribute("aria-describedby");
+    input.removeAttribute("aria-invalid");
+  }
+  passwordInput.autocomplete = register ? "new-password" : "current-password";
+  passwordInput.value = "";
+  accountStatus.textContent = "";
+}
+
+accountEntry.onclick = () => {
+  if (account) {
+    document.getElementById("logout-description").textContent =
+      "你正在使用账号 " + account.username + "。退出后将返回访客工作台。";
+    logoutDialog.returnValue = "";
+    logoutDialog.showModal();
+  } else {
+    accountMode(false);
+    accountDialog.showModal();
+  }
+};
+logoutDialog.addEventListener("close", () => {
+  if (logoutDialog.returnValue === "logout") sendAction("logout");
+});
+document.getElementById("close-account").onclick = () => accountDialog.close();
+document.getElementById("account-mode").onclick = () => accountMode(!registering);
+document.getElementById("refresh-captcha").onclick = () => {
+  captchaInput.value = "";
+  sendAction("refresh_captcha");
+};
+accountForm.onsubmit = event => {
+  event.preventDefault();
+  const username = nameInput.value.trim();
+  const password = passwordInput.value;
+  nameInput.removeAttribute("aria-invalid");
+  passwordInput.removeAttribute("aria-invalid");
+  if (registering) {
+    const groups = [/[A-Za-z]/, /[0-9]/, /_/].filter(rule => rule.test(username));
+    if (!/^[A-Za-z0-9_]{3,20}$/.test(username) || groups.length < 2) {
+      accountStatus.textContent = document.getElementById("account-name-hint").textContent;
+      nameInput.setAttribute("aria-invalid", "true");
+      nameInput.focus();
+      return;
+    }
+    const length = [...password].length;
+    if (length < 8 || length > 20 || !/[A-Za-z]/.test(password) || !/[0-9]/.test(password)
+        || !/[\p{P}\p{S}]/u.test(password) || /[\s\p{C}]/u.test(password)) {
+      accountStatus.textContent = document.getElementById("account-password-hint").textContent;
+      passwordInput.setAttribute("aria-invalid", "true");
+      passwordInput.focus();
+      return;
+    }
+  }
+  accountSubmit.disabled = true;
+  sendAction(registering ? "register" : "login", {username, password, captcha: captchaInput.value});
+  passwordInput.value = "";
+  captchaInput.value = "";
+  accountStatus.textContent = "正在提交…";
+};
+
 window.addEventListener("message", event => {
   if (event.source !== window.parent || event.data?.type !== "streamlit:render") return;
-  const {state, product, items, atlas, draft} = event.data.args;
+  const {state, product, items, atlas, draft, captcha} = event.data.args;
+  account = event.data.args.account || null;
+  accountWorks = event.data.args.account_works || [];
+  temporaryAccounts = event.data.args.temporary_accounts;
+  accountEntry.textContent = account ? account.username + " · 退出" : "登录";
+  accountEntry.title = account ? "退出账号 " + account.username : "登录";
+  const captchaImage = document.getElementById("captcha-image");
+  if (captcha && captchaImage.getAttribute("src") !== captcha) captchaImage.src = captcha;
   if (!hydrated) {
     hydrated = true;
     if (product) {
@@ -223,6 +332,23 @@ window.addEventListener("message", event => {
   }
   if (!state || state.id === applied) return;
   applied = state.id;
+  if (state.action === "login" || state.action === "register") {
+    accountSubmit.disabled = false;
+    if (state.registered) accountMode(false);
+    accountStatus.textContent = state.message || "";
+    if (state.signedIn) {
+      accountDialog.close();
+      accountForm.reset();
+      if (!historyPage.hidden) showHistory(true);
+      showToast(state.message);
+    }
+    return;
+  }
+  if (state.action === "logout" && sessionStorage.getItem("studio-last-logout") !== state.id) {
+    sessionStorage.setItem("studio-last-logout", state.id);
+    location.reload();
+    return;
+  }
   if (state.action === "generate") finishGeneration(state.message);
   else if (state.message) showToast(state.message);
   if (state.extracted) {
@@ -260,7 +386,7 @@ window.addEventListener("message", event => {
     document.getElementById("b-copy").textContent = "";
     setBChannel(bChannel);
   }
-  if (product?.history_id && (state.action === "product" && state.resetDraft ||
+  if (!account && product?.history_id && (state.action === "product" && state.resetDraft ||
       state.action === "generate" && state.items || state.action === "save" && state.saved)) {
     rememberProduct(product, draft);
   }

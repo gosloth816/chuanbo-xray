@@ -1,15 +1,21 @@
 """Connect the approved HTML workspace to the existing studio services."""
 import base64
+import secrets
+import sqlite3
+from io import BytesIO
+from uuid import uuid4
 from html import escape
 from pathlib import Path
 
 import streamlit as st
+from PIL import Image, ImageDraw, ImageFont
 from streamlit.components.v1 import declare_component
 from streamlit.errors import StreamlitSecretNotFoundError
 
 from .constants import is_public_deployment
 from .storage import ReviewStore
 from .studio import new_bundle, persist, save_edit, send_to_xray
+from .studio_accounts import _admin_config, _create, authenticate, database, list_works, load_work, save_work
 from .studio_model import CHANNELS, StudioError, StudioModel
 from .studio_workspace import _match_origin, _origin_atlas
 
@@ -29,7 +35,7 @@ def _atlas_svg(origin):
                        f'<text x="{x}" y="{y}">{label}</text>')
 
 
-EXACT_RELEASE = 12
+EXACT_RELEASE = 13
 
 
 class _StudioWithSafeTitles(StudioModel):
@@ -57,8 +63,83 @@ def _model():
     return _StudioWithSafeTitles(settings=settings, public=is_public_deployment())
 
 
+def _challenge():
+    if "studio_captcha" not in st.session_state:
+        alphabet = "ACDEFGHJKLMNPRTUVWXY2346789"
+        code = "".join(secrets.choice(alphabet) for _ in range(5))
+        image = Image.new("RGB", (160, 50), "#edf3fa")
+        draw = ImageDraw.Draw(image)
+        for _ in range(42):
+            x, y = secrets.randbelow(160), secrets.randbelow(50)
+            draw.ellipse((x, y, x + 2, y + 2), fill="#b8cbe0")
+        font = ImageFont.load_default(size=29)
+        for index, character in enumerate(code):
+            draw.text((16 + index * 27, 7 + secrets.randbelow(7)),
+                      character, font=font, fill="#244466")
+        buffer = BytesIO()
+        image.save(buffer, format="PNG")
+        st.session_state["studio_captcha"] = (code, base64.b64encode(buffer.getvalue()).decode())
+    return st.session_state["studio_captcha"]
+
+
+def _account_action(action, event, result):
+    if action == "logout":
+        for key in ("studio_account", "studio_captcha", "exact_product", "exact_facts", "exact_bundle", "review"):
+            st.session_state.pop(key, None)
+        result["message"] = "已退出登录。"
+        return
+    code, _ = _challenge()
+    st.session_state.pop("studio_captcha", None)
+    if str(event.get("captcha", "")).strip().upper() != code:
+        raise StudioError("验证码不正确，请再试一次。")
+    name = str(event.get("username", "")).strip()
+    password = str(event.get("password", ""))
+    admin_name, admin_password = _admin_config()
+    if action == "register":
+        if name.casefold() in {"admin", admin_name.casefold()}:
+            raise StudioError("该用户名不可用于注册。")
+        try:
+            with database() as db:
+                _create(db, name, password, "merchant")
+        except sqlite3.IntegrityError as exc:
+            raise StudioError("该用户名已存在。") from exc
+        except ValueError as exc:
+            raise StudioError(str(exc)) from exc
+        result["registered"] = True
+        result["message"] = "账号已创建，可以登录了。"
+        return
+    if admin_password and name == admin_name:
+        with database() as db:
+            if not db.execute("SELECT 1 FROM studio_users WHERE username=?", (name,)).fetchone():
+                try:
+                    _create(db, name, admin_password, "admin")
+                except sqlite3.IntegrityError:
+                    pass
+    account = authenticate(name, password)
+    if not account:
+        raise StudioError("账号或密码有误，或尝试过多，请稍后再试。")
+    st.session_state["studio_account"] = account
+    result["signedIn"] = True
+    result["message"] = "登录成功。"
+
+
 def _run_action(event, result):
     action = event.get("action")
+    if action == "refresh_captcha":
+        st.session_state.pop("studio_captcha", None)
+        return
+    if action in {"login", "register", "logout"}:
+        _account_action(action, event, result)
+        return
+    owner = (st.session_state.get("studio_account") or {}).get("username")
+    saved_work = None
+    if action == "restore_account_product":
+        saved_work = load_work(owner, event["work_id"]) if owner else None
+        if not saved_work:
+            raise StudioError("没有找到这件账号作品。")
+        product = saved_work["product"]
+        event = {"product": product, "photo": product.get("photo", ""), "history_id": event["work_id"]}
+        action = "restore_product"
     if action == "open_review":
         st.session_state["workspace_next"] = "传播 X 光审核"
         return
@@ -90,13 +171,13 @@ def _run_action(event, result):
                 ("data:image/jpeg;base64,", "data:image/png;base64,", "data:image/webp;base64,")
             )):
                 raise StudioError("商品图片格式或大小不符合要求。")
-            history_id = event.get("history_id", "")
+            history_id = event.get("history_id") or uuid4().hex
             previous = st.session_state.get("exact_product", {})
             same_product = (previous.get("history_id") == history_id if history_id
                             else previous.get("f0") == facts["F1"]["value"])
             previous_photo = previous.get("photo", "") if same_product else ""
             restored = event.get("draft") if action == "restore_product" else None
-            bundle = None
+            bundle = saved_work["bundle"] if saved_work else None
             if restored:
                 items = restored["items"]
                 if {item["channel"] for item in items} != set(CHANNELS) or len(items) != len(CHANNELS):
@@ -108,8 +189,10 @@ def _run_action(event, result):
                                     audience=restored["audience"][:80], tone=restored["tone"][:80],
                                     creative_brief=restored.get("creative_brief", {}))
                 bundle["origin"] = "从当前浏览器恢复的历史文稿"
-            st.session_state["exact_product"] = {**product, "photo": photo or previous_photo,
-                                                 "history_id": history_id}
+            confirmed = {**product, "photo": photo or previous_photo, "history_id": history_id}
+            if owner and action == "product":
+                save_work(owner, confirmed, None)
+            st.session_state["exact_product"] = confirmed
             st.session_state["exact_facts"] = facts
             st.session_state.pop("exact_bundle", None)
             result["atlas"] = _atlas_svg(facts.get("F2", {}).get("value", ""))
@@ -135,7 +218,10 @@ def _run_action(event, result):
                                creative_direction=direction, focus_ids=focus)
         bundle = new_bundle(facts, items, model=model.name, audience=audience, tone=tone,
                             creative_brief={"creative_direction": direction, "focus_fact_ids": focus})
-        persist(bundle)
+        if owner:
+            save_work(owner, st.session_state["exact_product"], bundle)
+        else:
+            persist(bundle)
         st.session_state["exact_bundle"] = bundle
         result.update(items=items, message="文案已生成。")
     elif action in {"save", "review"}:
@@ -147,7 +233,10 @@ def _run_action(event, result):
             edit = edits.get(item["channel"])
             if edit and edit["title"].strip() and edit["body"].strip():
                 save_edit(bundle, index, edit["title"][:6000], edit["body"][:6000])
-        persist(bundle)
+        if owner:
+            save_work(owner, st.session_state["exact_product"], bundle)
+        else:
+            persist(bundle)
         result["message"] = "文稿已保存。"
         result["saved"] = action == "save"
         if action == "review":
@@ -158,11 +247,15 @@ def _run_action(event, result):
 
 
 def render_exact_studio():
-    component = declare_component("approved_studio", path=Path(__file__).with_name("studio_frontend"))
+    component = declare_component("approved_studio_v13", path=Path(__file__).with_name("studio_frontend"))
     state = st.session_state.get("exact_result") or {}
     product = st.session_state.get("exact_product")
     bundle = st.session_state.get("exact_bundle")
-    event = component(state=state, product=product,
+    account = st.session_state.get("studio_account")
+    event = component(state=state, product=product, account=account,
+                      captcha="" if account else "data:image/png;base64," + _challenge()[1],
+                      account_works=list_works(account["username"]) if account else [],
+                      temporary_accounts=is_public_deployment(),
                       items=bundle["items"] if bundle else None,
                       draft={key: bundle[key] for key in ("items", "model", "audience", "tone", "creative_brief")} if bundle else None,
                       atlas=_atlas_svg(product.get("f1", "")) if product else None,
@@ -177,6 +270,8 @@ def render_exact_studio():
         _run_action(event, result)
     except StudioError as error:
         result["message"] = str(error)
+    except sqlite3.Error:
+        result["message"] = "暂时无法访问作品或账号存储，请稍后重试。"
     except (TypeError, ValueError, KeyError, IndexError):
         result["message"] = "这次提交的资料格式有误，请检查后重试。"
     st.session_state["exact_result"] = result

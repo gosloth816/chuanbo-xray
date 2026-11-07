@@ -61,12 +61,12 @@
 #unified-atlas .city.selected{fill:#7097b1;stroke:#456c86;stroke-width:1}
 #unified-atlas text{font-weight:700;font-size:13px;stroke-width:2.7}
 </style><style>@media(max-width:760px){.fusion .b-editor>.preview-panel{display:flex}}</style><style>#creative-direction{width:100%;resize:vertical;font:inherit;padding:9px;border:1px solid #cccdd3;border-radius:7px;background:white}</style><style>.b-inspector .inspector-facts label{display:flex;align-items:flex-start;gap:6px;margin:0;padding:5px 8px;background:#e8edf5;color:#32445d;border-radius:5px;overflow-wrap:anywhere}.inspector-facts input{margin-top:3px;accent-color:#0066cc}</style><style>#add-product{width:100%;margin:0 0 14px}#review-copy{width:100%;color:#0059b2;border-color:#8bb4de;margin:0 0 8px}@media(max-width:760px){#add-product{grid-column:1/-1;grid-row:1}.fusion .b-source img{grid-row:2/5}}</style></head><body class="fusion capture"><a class="skip" href="#main">跳到编辑区</a><div class="fusion-bar"><span>左侧商品 · 中间手机文稿 · 右侧表达设定</span><a href="?">返回工作区</a></div><main id="main"><section class="concept b-shell active" id="view-b" aria-label="B 文案编辑型">
- <nav class="product-nav" aria-label="产品导航"><div class="brand"><svg aria-hidden="true" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 20V8a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-8l-5 4v-4Z"/><path d="m10 11 3 3 5-5"/></svg>齐鲁卖点</div><div class="nav-links"><button class="current" onclick="showToast('当前正在预览文案编辑工作区。')">创作室</button><button id="open-workbench" type="button">传播 X 光</button></div><div class="nav-end"><button class="text-button" id="open-history" type="button">我的作品</button></div></nav>
+ <nav class="product-nav" aria-label="产品导航"><div class="brand"><svg aria-hidden="true" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 20V8a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-8l-5 4v-4Z"/><path d="m10 11 3 3 5-5"/></svg>齐鲁卖点</div><div class="nav-links"><button class="current" onclick="showToast('当前正在预览文案编辑工作区。')">创作室</button><button id="open-workbench" type="button">传播 X 光</button></div><div class="nav-end"><button class="text-button" id="open-history" type="button">我的作品</button><button class="secondary" id="account-entry" type="button">登录</button></div></nav>
 <section id="history-page" hidden aria-labelledby="history-title">
   <header class="history-header">
     <div><button class="text-button" id="back-to-studio" type="button">返回创作室</button>
       <h1 id="history-title" tabindex="-1">我的作品</h1>
-      <p>找回已录入的商品，继续生成或编辑文案。记录保存在当前浏览器。</p>
+      <p id="history-description">找回已录入的商品，继续生成或编辑文案。访客记录保存在当前浏览器。</p>
     </div>
     <button class="primary" id="new-history-product" type="button">录入新商品</button>
   </header>
@@ -259,4 +259,65 @@ function updateOriginMap(origin){
 }
 updateOriginMap('山东烟台');
 </script>
+
+<dialog class="studio-dialog" id="account-dialog" aria-labelledby="account-title">
+  <form id="account-form">
+    <header class="dialog-heading">
+      <h2 id="account-title">登录</h2>
+      <button id="close-account" class="text-button" type="button">关闭</button>
+    </header>
+    <p class="dialog-description" id="account-description">登录后可查看自己账号下的作品。</p>
+    <label for="account-name">账号</label>
+    <input id="account-name" name="username" maxlength="32" autocomplete="username" required>
+    <p class="input-hint" id="account-name-hint" hidden>3–20 位，字母、数字、下划线至少用两类。</p>
+    <label for="account-password">密码</label>
+    <input id="account-password" name="password" type="password" maxlength="128" autocomplete="current-password" required>
+    <p class="input-hint" id="account-password-hint" hidden>8–20 位，须含字母、数字和特殊符号（如 !、#、@），不含空格。</p>
+    <label for="account-captcha">验证码</label>
+    <div class="captcha-row">
+      <input id="account-captcha" name="captcha" maxlength="5" autocomplete="off" required>
+      <button id="refresh-captcha" type="button" aria-label="更换验证码" title="点击更换验证码">
+        <img id="captcha-image" width="160" height="50" alt="图片验证码">
+      </button>
+    </div>
+    <p id="account-status" role="status"></p>
+    <div class="account-actions">
+      <button id="account-mode" class="text-button" type="button">注册新用户</button>
+      <button id="account-submit" class="primary" type="submit">登录</button>
+    </div>
+    <p class="input-hint" id="account-storage-note" hidden>体验版的账号和作品可能在服务更新或重启后清空。</p>
+  </form>
+</dialog>
+<dialog class="studio-dialog" id="logout-dialog" aria-labelledby="logout-title" aria-describedby="logout-description">
+  <div class="logout-icon" aria-hidden="true">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h5m4-11 4 4-4 4m4-4H9"/></svg>
+  </div>
+  <h2 id="logout-title">退出当前账号？</h2>
+  <p id="logout-description" class="dialog-description"></p>
+  <form method="dialog" class="logout-actions">
+    <button class="secondary" value="cancel" autofocus>继续使用</button>
+    <button class="primary" value="logout">退出登录</button>
+  </form>
+</dialog>
+<style>
+#account-entry{font-size:14px;padding:6px 15px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.studio-dialog{width:min(460px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto;border:1px solid var(--line);border-radius:16px;background:#fff;padding:28px 30px;color:var(--ink)}
+.studio-dialog::backdrop{background:#171b2a66}
+.studio-dialog h2{font-size:24px;letter-spacing:-.025em;margin:0}
+.dialog-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.dialog-description{font-size:14px;color:var(--muted);margin:6px 0 20px;overflow-wrap:anywhere}
+#account-form label{display:block;font-size:14px;font-weight:600;margin:14px 0 5px}
+#account-form input{width:100%;min-height:42px;border:1px solid #c8c8ce;border-radius:8px;padding:8px 10px;font:inherit;color:inherit;background:#fff}
+#account-form input[aria-invalid="true"]{border-color:#a93429}
+.input-hint{color:var(--muted);font-size:13px;margin:5px 0 0}
+.captcha-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(104px,160px);align-items:center;gap:10px}
+#refresh-captcha{padding:0;border:0;background:#edf3fa;border-radius:8px;overflow:hidden}
+#captcha-image{display:block;width:100%;height:auto}
+#account-status{min-height:20px;margin:9px 0;color:#9b3327;font-size:13px}
+.account-actions,.logout-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:12px}
+.account-actions .primary,.logout-actions button{min-height:42px}
+#logout-dialog{width:min(400px,calc(100% - 32px))}
+.logout-icon{display:grid;place-items:center;width:44px;height:44px;margin:0 0 16px;border-radius:12px;background:#edf4fc;color:#005cb8}
+@media(max-width:460px){.studio-dialog{padding:23px 20px}#account-entry{max-width:95px}.fusion .nav-end{gap:8px}}
+</style>
 <script src="bridge.js"></script></body></html>
